@@ -1,5 +1,6 @@
 package org.smurve.mnist
 
+import org.apache.spark.SparkContext
 import org.apache.spark.sql.SparkSession
 
 /**
@@ -8,5 +9,5 @@ import org.apache.spark.sql.SparkSession
 object MNistLocalRunner extends MNistRunner ( new HDFSConfig ) {
 
   protected val session: SparkSession = SparkSession.builder().appName("MNist").master("local").getOrCreate()
-
+  override protected val sc: SparkContext = session.sparkContext
 }

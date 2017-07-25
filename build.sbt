@@ -26,3 +26,12 @@ val provided = if ( cluster == "false" ) localLibs else clusterLibs
 
 
 libraryDependencies ++= provided
+
+val nd4jVersion = "0.7.2"
+
+libraryDependencies ++= Seq(
+  "org.scalatest" %% "scalatest" % "2.2.6" % "test",
+  "org.nd4j" % "nd4j-cuda-8.0" % nd4jVersion,
+  "org.nd4j" % "nd4j-native-platform" % nd4jVersion,
+  "org.nd4j" %% "nd4s" % nd4jVersion
+)

@@ -1,5 +1,6 @@
 package org.smurve.mnist
 
+import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.SparkSession
 
 /**
@@ -7,5 +8,13 @@ import org.apache.spark.sql.SparkSession
   */
 object MNISTClusterRunner extends MNistRunner ( new HDFSConfig ) {
 
-  protected val session: SparkSession = SparkSession.builder().appName("MNIST").getOrCreate()
+  private val cfg = new SparkConf().set("spark.cores.max", "8")
+
+  override protected val session: SparkSession = SparkSession.builder().
+    config(cfg).
+    appName("MNIST").
+    getOrCreate()
+
+  override protected lazy val sc: SparkContext = session.sparkContext
+
 }

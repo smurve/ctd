@@ -9,7 +9,7 @@ import scala.collection.immutable.IndexedSeq
   * A file containing MNIST Images
   * see: http://yann.lecun.com/exdb/mnist/
   */
-class MNISTImages(bytes: Array[Byte] ) {
+class MNISTImages(bytes: Array[Byte] ) extends Serializable {
 
   val headerSize = 16
   val IMAGES: Int = 0x803 // magic number for image file
@@ -30,6 +30,6 @@ class MNISTImages(bytes: Array[Byte] ) {
   def imgAtIndex (index: Int ) : MNISTImage =
     MNISTImage(bytes.slice( headerSize + imgSize * index, headerSize + imgSize * ( index + 1 )), numCols, numRows)
 
-  lazy val imgs: IndexedSeq[MNISTImage] = ( 0 until numImgs).map(imgAtIndex)
+  lazy val sequence: IndexedSeq[MNISTImage] = ( 0 until numImgs).map(imgAtIndex)
 }
 
