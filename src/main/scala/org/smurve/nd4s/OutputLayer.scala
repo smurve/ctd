@@ -64,7 +64,7 @@ abstract class OutputLayer extends Layer {
     * update pass ends here. Check if grads is empty and do nothing, throw
     * @param grads: should be an empty list, since gradients should have been applied to previous layers already.
     */
-  override def update(grads: List[INDArray]): Unit = {
+  override def update(grads: Seq[INDArray]): Unit = {
     if ( grads.nonEmpty)
       throw new IllegalArgumentException("This is the output layer. There should be no more gradients to be applied.")
   }

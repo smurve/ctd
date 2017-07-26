@@ -37,5 +37,5 @@ trait Activation extends Layer {
     * nothing to do here, pass on
     * @param grads the gradients to be applied (but not here).
     */
-  override def update(grads: List[INDArray]): Unit = nextLayer.update(grads)
+  override def update(grads: Seq[INDArray]): Unit = nextLayer.update(grads)
 }

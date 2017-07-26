@@ -48,7 +48,7 @@ trait Layer {
     */
   def fwbw(x: INDArray, y_bar: INDArray): PROPAGATED
 
-  def update (grads: List[INDArray]): Unit
+  def update (grads: Seq[INDArray]): Unit
 
   /**
     * Stacking operator with output.

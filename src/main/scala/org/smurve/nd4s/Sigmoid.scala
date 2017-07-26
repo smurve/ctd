@@ -38,5 +38,5 @@ case class Sigmoid() extends Layer {
     * nothing to do. Just pass on
     * @param grads gradients for the parameter layers to update
     */
-  override def update(grads: List[INDArray]): Unit = nextLayer.update(grads)
+  override def update(grads: Seq[INDArray]): Unit = nextLayer.update(grads)
 }

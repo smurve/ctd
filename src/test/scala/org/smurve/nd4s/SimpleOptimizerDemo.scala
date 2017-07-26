@@ -19,11 +19,13 @@ class SimpleOptimizerDemo extends FlatSpec with ShouldMatchers {
 
   trait Setup {
     val (x1c, x2c) = (3, 3)
-    val N_t = 200
-    val reportEvery = 1
-    val N_EPOCHS = 200
-    val eta: Double = 2e-3
+    val N_t = 600
+    val N_EPOCHS = 500
+    val reportEvery = 20
+    val eta: Double = 1e-3
     val scale = 1.0
+    val nbatches = 10
+    val parallel = true
 
     val trSet: TrainingSet = createLabeledSet(N_t, x1c, x2c)
     val theta1: INDArray = (Nd4j.rand(seed, 3, 10) - .5) / scale
@@ -71,7 +73,7 @@ class SimpleOptimizerDemo extends FlatSpec with ShouldMatchers {
       val wild_guess: INDArray = nn.ffwd(vec(1, 1))
       val (d1, g1, c1): PROPAGATED = nn.fwbw(vec(1, 1), vec(1, 0, 0, 0))
 
-      SimpleOptimizer.train(nn, trSet, N_EPOCHS, eta, reportEvery)
+      SimpleOptimizer.train(nn, nbatches, parallel, trSet, N_EPOCHS, eta, reportEvery)
 
       val testSize = 100
       val (samples, labels): (INDArray, INDArray) = createLabeledSet(testSize, 3, 3)
