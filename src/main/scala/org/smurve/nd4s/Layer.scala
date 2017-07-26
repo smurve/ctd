@@ -27,15 +27,15 @@ trait Layer {
 
   /**
     * forward pass or inference: same for all layers
-    * @param x the input vector
+    * @param x the batch of input row vectors
     * @return the associated output vector
     */
   def ffwd(x: INDArray): INDArray = nextLayer.ffwd(fun(x))
 
   /**
     * forward pass and back propagation in one method call
-    * @param x the input vector
-    * @param y_bar the expected outcome
+    * @param x the batch of input row vectors
+    * @param y_bar the batch of expected outcome row vectors
     */
   def fwbw(x: INDArray, y_bar: INDArray ) : PROPAGATED
 
