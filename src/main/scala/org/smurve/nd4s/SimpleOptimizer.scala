@@ -18,6 +18,5 @@ object SimpleOptimizer {
         println(s"Cost: $c")
       model.update(g.map(_ * -eta))
     }
-
   }
 }
