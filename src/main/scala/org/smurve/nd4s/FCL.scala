@@ -19,5 +19,14 @@ case class FCL(theta: INDArray) extends Layer {
   }
 
   def += ( dTheta: INDArray ): Unit = theta += dTheta
+
+  /**
+    * update from head and pass the tail on to subsequent layers
+    * @param grads: The list of gradients accumulated during training
+    */
+  override def update(grads: List[INDArray]): Unit = {
+    this += grads.head
+    nextLayer.update(grads.tail)
+  }
 }
 

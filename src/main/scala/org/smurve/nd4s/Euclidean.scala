@@ -24,4 +24,5 @@ case class Euclidean() extends OutputLayer {
     * @return the gradient of the euclidean cost function at the given actual output
     */
   override def grad_c(y: INDArray, y_bar: INDArray): INDArray = y - y_bar
+
 }

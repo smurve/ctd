@@ -90,7 +90,7 @@ class FCLSpec extends FlatSpec with ShouldMatchers {
   }
 
   "A RELU" should "work as specified" in {
-    val net = RELU() |:| Euclidean()
+    val net = ReLU() |:| Euclidean()
     val x = vec(1,-2, 2, 0)
     val y_bar = appf(x, _+2)
     val y = net.ffwd(x)

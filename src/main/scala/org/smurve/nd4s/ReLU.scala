@@ -6,7 +6,7 @@ import org.nd4j.linalg.ops.transforms.Transforms._
 /**
   * Created by wgiersche on 26/07/17.
   */
-case class RELU() extends Activation {
+case class ReLU() extends Activation {
   /**
     * the function associated with this layer
     *

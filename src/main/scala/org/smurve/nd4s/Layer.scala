@@ -5,6 +5,7 @@ import org.nd4j.linalg.api.ndarray.INDArray
 trait Layer {
 
   private var next: Option[Layer] = None
+
   /**
     * present the next layer
     *
@@ -14,12 +15,13 @@ trait Layer {
     "Network shouldn't end here. Are you missing an output layer?"))
 
 
-  def inititialize( layer: Layer ): Unit = {
+  def inititialize(layer: Layer): Unit = {
     next = Some(layer)
   }
 
   /**
     * the function associated with this layer
+    *
     * @param x the input vector
     * @return the function applied to the input vector
     */
@@ -28,30 +30,48 @@ trait Layer {
 
   /**
     * forward pass or inference: same for all layers
+    *
     * @param x the batch of input row vectors
     * @return the associated output vector
     */
-  def ffwd(x: INDArray): INDArray = nextLayer.ffwd(fun(x))
+  def ffwd(x: INDArray): INDArray = {
+    val y = fun(x)
+    val value = nextLayer.ffwd(y)
+    value
+  }
 
   /**
     * forward pass and back propagation in one method call
-    * @param x the batch of input row vectors
+    *
+    * @param x     the batch of input row vectors
     * @param y_bar the batch of expected outcome row vectors
     */
-  def fwbw(x: INDArray, y_bar: INDArray ) : PROPAGATED
+  def fwbw(x: INDArray, y_bar: INDArray): PROPAGATED
+
+  def update (grads: List[INDArray]): Unit
 
   /**
     * Stacking operator with output.
+    *
     * @param outputLayer an output layer
     * @return this
     */
-  def |:| ( outputLayer: OutputLayer ): Layer = {
-    this.inititialize(outputLayer)
+  def |:|(outputLayer: OutputLayer): Layer = {
+    rightmost.inititialize(outputLayer)
     this
   }
 
-  def |:| ( next: Layer ): Layer = {
-    this.inititialize(next)
+  /**
+    * @return the rightmost layer in the network
+    */
+  def rightmost: Layer = next match {
+    case Some(n) => n.rightmost
+    case None => this
+  }
+
+  def |:|(next: Layer): Layer = {
+    val r = rightmost
+    r.inititialize(next)
     this
   }
 }

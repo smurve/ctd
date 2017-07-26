@@ -1,26 +1,27 @@
 package org.smurve.nd4s
 
 import org.nd4j.linalg.api.ndarray.INDArray
+import org.nd4j.linalg.factory.Nd4j
+import org.nd4j.linalg.ops.transforms.Transforms._
 import org.nd4s.Implicits._
 
 /**
-  * convenience class that delegates vector f_prime to the Double f_prime
+  * sigmoid activation is an Activation but doesn't need the help of the Activation
   */
-trait Activation extends Layer {
-
+case class Sigmoid() extends Layer {
   /**
-    * the derivative function to be implemented by you
-    * @param x input value
-    * @return f_prime applied to x
-    */
-  def f_prime (x: Double): Double
-
-  /**
-    * the element-wise function application for the derivative
+    * the function associated with this layer
+    *
     * @param x the input vector
-    * @return f_prime applied to every element of x
+    * @return the function applied to the input vector
     */
-  def f_prime (x: INDArray): INDArray = appf(x, f_prime)
+  override def fun(x: INDArray): INDArray = sigmoid(x)
+
+  def f_prime (x: INDArray): INDArray = {
+    val s = sigmoid(x)
+    val one = Nd4j.ones(x.size(0), x.size(1))
+    s * ( one - s)
+  }
 
   /**
     * forward pass and back propagation in one method call
@@ -34,8 +35,8 @@ trait Activation extends Layer {
   }
 
   /**
-    * nothing to do here, pass on
-    * @param grads the gradients to be applied (but not here).
+    * nothing to do. Just pass on
+    * @param grads gradients for the parameter layers to update
     */
   override def update(grads: List[INDArray]): Unit = nextLayer.update(grads)
 }

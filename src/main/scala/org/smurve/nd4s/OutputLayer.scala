@@ -13,6 +13,11 @@ abstract class OutputLayer extends Layer {
     */
   override def nextLayer: Layer = throw new NoSuchMethodException("Don't call nextLayer within an Output layer!")
 
+  /**
+    * just pass the given value back
+    * @param x the batch of input row vectors
+    * @return the associated output vector
+    */
   override def ffwd(x: INDArray): INDArray = x
 
   /**
@@ -30,11 +35,37 @@ abstract class OutputLayer extends Layer {
     */
   def c(y: INDArray, y_bar: INDArray ): Double
 
+  /**
+    * @param x the input vector
+    * @param y_bar the expected outcome
+    * @return the gradient of the cost function with respect to x and y_bar
+    */
   def grad_c(x: INDArray, y_bar: INDArray): INDArray
 
-  override def |:| ( outputLayer: OutputLayer ): Layer = {
+  /**
+    *
+    * @param rhs a layer
+    * @return nothing
+    * @throws UnsupportedOperationException, because this should be the last layer
+    */
+  override def |:| ( rhs: Layer ): Layer = {
     throw new UnsupportedOperationException("Output layer has no next layer.")
   }
 
+  /**
+    * start the back propagation by returning the cost function's gradient
+    * @param x     the batch of input row vectors
+    * @param y_bar the batch of expected outcome row vectors
+    * @return a PROPAGATED tuple
+    */
   override def fwbw(x: INDArray, y_bar: INDArray): PROPAGATED = (grad_c(x, y_bar), Nil, c(x, y_bar))
+
+  /**
+    * update pass ends here. Check if grads is empty and do nothing, throw
+    * @param grads: should be an empty list, since gradients should have been applied to previous layers already.
+    */
+  override def update(grads: List[INDArray]): Unit = {
+    if ( grads.nonEmpty)
+      throw new IllegalArgumentException("This is the output layer. There should be no more gradients to be applied.")
+  }
 }
