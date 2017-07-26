@@ -1,21 +1,25 @@
 package org.smurve.nd4s
+
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4s.Implicits._
-import org.nd4j.linalg.ops.transforms.Transforms._
 
 /**
-  * Created by wgiersche on 26/07/17.
   */
-case class RELU() extends Activation {
-  /**
-    * the function associated with this layer
-    *
-    * @param x the input vector
-    * @return the function applied to the input vector
-    */
-  override def fun(x: INDArray): INDArray = relu(x) //x.map(d=>if(d>0) d else 0)
+trait Activation extends Layer {
 
-  def f_prime (x: Double): Double = if(x>0) 1 else 0
+  /**
+    * the derivative function to be implemented by you
+    * @param x input value
+    * @return f_prime applied to x
+    */
+  def f_prime (x: Double): Double
+
+  /**
+    * the element-wise function application for the derivative
+    * @param x the input vector
+    * @return f_prime applied to every element of x
+    */
+  def f_prime (x: INDArray): INDArray = appf(x, d=>f_prime(d))
 
   /**
     * forward pass and back propagation in one method call
