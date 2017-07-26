@@ -43,5 +43,24 @@ package object nd4s {
     */
   def h1(x: INDArray): INDArray = Nd4j.hstack(Nd4j.ones(x.size(0)).T, x)
 
+  /**
+    * convenience vector literals
+    * @param arr the numbers to make up the INDArray
+    * @return the INDArray containing those numbers
+    */
+  def vec(arr: Double*): INDArray = Nd4j.create(Array(arr: _*))
 
+
+  /**
+    * work-around for broken map() on INDArray
+    * Only supporting tensors of rank 1 and 2
+    */
+  def appf(x: INDArray, f: Double=>Double ): INDArray = {
+    val res = Nd4j.zeros(x.shape: _*)
+    val shape1 = if (x.shape.length == 1) 1 +: x.shape else x.shape
+    for ( i <- 0 until shape1(0))
+      for ( j <- 0 until shape1(1))
+        res(i,j) = f(x(i,j))
+    res
+  }
 }

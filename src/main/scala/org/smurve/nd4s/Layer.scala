@@ -25,6 +25,7 @@ trait Layer {
     */
   def fun(x: INDArray): INDArray
 
+
   /**
     * forward pass or inference: same for all layers
     * @param x the batch of input row vectors
