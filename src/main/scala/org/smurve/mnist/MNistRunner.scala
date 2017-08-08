@@ -5,17 +5,24 @@ import java.util.UUID
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
+import org.smurve.mnist.config.MNistConfig
 
 abstract class MNistRunner ( protected val config: MNistConfig ) {
 
   protected val session: SparkSession
   protected val sc: SparkContext
-  protected def hdfs ( name: String ): String = config.prefix + name
+
+  /**
+    * resolve in local fs or hdfs, depending on config
+    * @param name short name of the file
+    * @return
+    */
+  protected def resolve(name: String ): String = config.prefix + name
 
 
   protected def createImagesromBinary(name: String): RDD[MNISTImages] = {
 
-    val rawImages = sc.binaryFiles(hdfs(name))
+    val rawImages = sc.binaryFiles(resolve(name))
 
     /*
     val files = rawImages.collect()

@@ -1,4 +1,4 @@
-package org.smurve.mnist
+package org.smurve.mnist.config
 
 /**
   * Created by wgiersche on 22/07/17.
