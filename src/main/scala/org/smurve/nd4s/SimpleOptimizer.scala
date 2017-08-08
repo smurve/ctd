@@ -6,6 +6,7 @@ import org.nd4s.Implicits._
 import scala.collection.immutable.Seq
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
   * Created by wgiersche on 26/07/17.
