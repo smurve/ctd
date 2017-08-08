@@ -3,6 +3,9 @@ package org.smurve
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4s.Implicits._
+import org.smurve.mnist.MNISTImage
+
+import scala.util.Random
 
 /**
   * Created by wgiersche on 25/07/17.
@@ -63,4 +66,51 @@ package object nd4s {
         res(i,j) = f(x(i,j))
     res
   }
+
+  /**
+    *
+    * @param labeledData the images/labels to be shuffled
+    * @return
+    */
+  def shuffle(labeledData: (INDArray, INDArray), rnd: Random = new Random): (INDArray, INDArray) = {
+    def copy ( from: INDArray, to: INDArray): Unit = {
+      val l = from.length()
+      (0 until l).foreach(i=>to(i)=from(i))
+    }
+    val ( samples, labels ) = labeledData
+    val sampleSize = samples.size(1)
+    val swapSample = Nd4j.zeros(sampleSize)
+    val labelSize = labels.size(1)
+    val swapLabel = Nd4j.zeros(labelSize)
+
+    ( 0 until sampleSize).foreach (i=> {
+      val j = rnd.nextInt(sampleSize)
+      copy(samples.getRow(i), swapSample )
+      copy(samples.getRow(j), samples.getRow(i))
+      copy(swapSample, samples.getRow(j))
+      copy(labels.getRow(i), swapLabel )
+      copy(labels.getRow(j), labels.getRow(i))
+      copy(swapLabel, labels.getRow(j))
+    })
+
+    labeledData
+  }
+
+  /**
+    * @param iNDArray the INDArray representing the MNIST image to be printed
+    * @param width the width of the image, defaults to 28
+    * @param height the height of the image, defaults to 28
+    * @return a printable string representation of the given image
+    */
+  def asString (iNDArray: INDArray, width: Int = 28, height: Int = 28): String = {
+    val length = iNDArray.length
+    val array = Array.fill(length){0.toByte}
+
+    array.indices.foreach { index =>
+        array(index) = iNDArray.getDouble(index).toByte
+    }
+    MNISTImage(array, width, height).toString
+  }
+
+
 }

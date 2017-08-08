@@ -6,7 +6,6 @@ import org.nd4s.Implicits._
 import scala.collection.immutable.Seq
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
   * Created by wgiersche on 26/07/17.
@@ -37,10 +36,12 @@ object SimpleOptimizer {
     println("Started training")
     val t0 = System.currentTimeMillis()
 
-    val (samples, labels) = trainingSet
-    val bsize1 = trainingSet._1.size(0) / nBatches
+    val batchSize = trainingSet._1.size(0) / nBatches
 
-    for (i <- 0 to n_epochs) {
+    for (epoch <- 0 to n_epochs) {
+
+      val (samples, labels) = shuffle(trainingSet)
+
 
       val series = 0 until nBatches
       val seq = if (parallel) series.par else series
@@ -49,8 +50,8 @@ object SimpleOptimizer {
 
         /** Task parallelism */
         val futures: FutureResults = series.map(j => {
-          val subs: INDArray = samples(j * bsize1 -> (j + 1) * bsize1, ->)
-          val subl = labels(j * bsize1 -> (j + 1) * bsize1, ->)
+          val subs: INDArray = samples(j * batchSize -> (j + 1) * batchSize, ->)
+          val subl = labels(j * batchSize -> (j + 1) * batchSize, ->)
           Future {
             val (_, grads, c) = model.fwbw(subs, subl)
             (grads, c)
@@ -61,16 +62,60 @@ object SimpleOptimizer {
       } else {
         /** Data Parallelism */
         seq.map(j => {
-          val subs: INDArray = samples(j * bsize1 -> (j + 1) * bsize1, ->)
-          val subl = labels(j * bsize1 -> (j + 1) * bsize1, ->)
+          val subs: INDArray = samples(j * batchSize -> (j + 1) * batchSize, ->)
+          val subl = labels(j * batchSize -> (j + 1) * batchSize, ->)
           val (_, grads, c) = model.fwbw(subs, subl)
           (grads, c)
         }).reduce(sum)
       }
 
+
       model.update(g_total.map(_ * -eta))
-      if (i % reportEvery == 0)
+      if (epoch % reportEvery == 0)
         println(s"Cost: $c_total")
+    }
+
+    val t1 = System.currentTimeMillis()
+    println(s"finished training after ${t1 - t0} ms.")
+
+  }
+
+  def train(model: Layer, nBatches: Int, parallelism: Integer, task: Boolean,
+            trainingSet: (INDArray, INDArray), n_epochs: Int, eta: Double, reportEvery: Int): Unit = {
+
+    assert(parallelism >= 1, "Parallelism can't be less than 1.")
+
+    println("Started training")
+    val t0 = System.currentTimeMillis()
+
+    val batchSize = trainingSet._1.size(0) / nBatches / parallelism
+
+    for (epoch <- 1 to n_epochs) {
+
+      println(s"Starting epoch $epoch")
+
+      val (samples, labels) = shuffle(trainingSet)
+      val nSeries = nBatches / parallelism
+
+      for (serNo <- 0 until nSeries) {
+
+        val offset = serNo * parallelism * batchSize
+        val seq = 0 until parallelism//.par
+
+        val (g_total, c_total): (Seq[INDArray], Double) =
+          seq.map(j => {
+            val fromIndex = offset + j * batchSize
+            val toIndex = offset + (j + 1) * batchSize
+            val subs: INDArray = samples( fromIndex -> toIndex, ->)
+            val subl = labels(fromIndex -> toIndex, ->)
+            val (_, grads, c) = model.fwbw(subs, subl)
+            (grads, c)
+          }).reduce(sum)
+
+        model.update(g_total.map(_ * -eta))
+        if (serNo % reportEvery == 0)
+          println(s"Cost: $c_total")
+      }
     }
 
     val t1 = System.currentTimeMillis()

@@ -1,25 +1,20 @@
 package org.smurve.mnist
 
-import java.nio.ByteBuffer
+import org.nd4j.linalg.api.ndarray.INDArray
+import org.nd4j.linalg.factory.Nd4j
 
 import scala.collection.immutable.IndexedSeq
 
 
 /**
-  * A file containing MNIST Images
+  * A convenience wrapper around the content of yann's file containing MNIST Images
   * see: http://yann.lecun.com/exdb/mnist/
   */
-class MNISTImages(bytes: Array[Byte] ) extends Serializable {
+class MNISTImages( val bytes: Array[Byte] ) extends MNISTData with Serializable {
 
   val headerSize = 16
-  val IMAGES: Int = 0x803 // magic number for image file
-  val LABELS: Int = 0x801 // magic number for label file
 
-  def asInt(bytes: Array[Byte]): Int = ByteBuffer.wrap(bytes).getInt
-
-  val magicNumber: Int = asInt(bytes.slice(0,4))
-
-  assert(magicNumber == IMAGES )
+  assert(magicNumber == IMAGES, "Magic number does not indicate an image file.")
 
   val numImgs: Int = asInt(bytes.slice(4,8))
   val numRows: Int = asInt(bytes.slice(8,12))
@@ -27,9 +22,15 @@ class MNISTImages(bytes: Array[Byte] ) extends Serializable {
 
   val imgSize: Int = numRows * numCols
 
-  def imgAtIndex (index: Int ) : MNISTImage =
-    MNISTImage(bytes.slice( headerSize + imgSize * index, headerSize + imgSize * ( index + 1 )), numCols, numRows)
+  lazy val asByteArray: Array[Byte] = bytes.slice(headerSize, bytes.length)
+  lazy val asSequence: IndexedSeq[MNISTImage] = ( 0 until numImgs).map(imgAtIndex)
+  lazy val asDoubleArray: Array[Double] = asByteArray.map(b=>(b & 0xFF).toDouble)
+  lazy val asINDarray: INDArray = Nd4j.create(asDoubleArray).reshape(numImgs, imgSize)
 
-  lazy val sequence: IndexedSeq[MNISTImage] = ( 0 until numImgs).map(imgAtIndex)
+  def bytesAtIndex(index: Int): Array[Byte] = bytes.slice( headerSize + imgSize * index, headerSize + imgSize * ( index + 1 ))
+  def iNDarrayAtIndex (index: Int): INDArray = Nd4j.create(bytesAtIndex(index).map(b=>(b & 0xFF).toDouble))
+  def imgAtIndex (index: Int ) : MNISTImage =
+    MNISTImage(bytesAtIndex ( index ), numCols, numRows)
+
 }
 

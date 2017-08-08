@@ -73,7 +73,8 @@ object SimpleOptimizerDemo  {
       val wild_guess: INDArray = nn.ffwd(vec(1, 1))
       val (d1, g1, c1): PROPAGATED = nn.fwbw(vec(1, 1), vec(1, 0, 0, 0))
 
-      SimpleOptimizer.train(nn, nbatches, parallel, task, trSet, N_EPOCHS, eta, reportEvery)
+      SimpleOptimizer.train(model = nn, nBatches = nbatches, parallel = parallel, task = task,
+        trainingSet = trSet, n_epochs = N_EPOCHS, eta = eta, reportEvery = reportEvery)
 
       val testSize = 100
       val (samples, labels): (INDArray, INDArray) = createLabeledSet(testSize, 3, 3)
