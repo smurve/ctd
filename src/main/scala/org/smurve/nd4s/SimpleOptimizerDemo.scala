@@ -3,6 +3,7 @@ package org.smurve.nd4s
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4s.Implicits._
+import org.smurve.transform.Affine
 
 import scala.util.Random
 
@@ -73,7 +74,8 @@ object SimpleOptimizerDemo  {
       val wild_guess: INDArray = nn.ffwd(vec(1, 1))
       val (d1, g1, c1): PROPAGATED = nn.fwbw(vec(1, 1), vec(1, 0, 0, 0))
 
-      SimpleOptimizer.train(model = nn, nBatches = nbatches, parallel = parallel, task = task,
+      val optimizer = new SimpleOptimizer(()=>Affine.identity, random = new Random(seed))
+      optimizer.train(model = nn, nBatches = nbatches, parallel = parallel, task = task,
         trainingSet = trSet, n_epochs = N_EPOCHS, eta = eta, reportEvery = reportEvery)
 
       val testSize = 100

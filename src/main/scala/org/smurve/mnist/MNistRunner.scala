@@ -11,6 +11,9 @@ import org.nd4s.Implicits._
 import org.smurve.mnist.config.MNistConfig
 import org.smurve.nd4s.SimpleOptimizerDemo.{matches, seed}
 import org.smurve.nd4s._
+import org.smurve.transform._
+
+import scala.util.Random
 
 
 abstract class MNistRunner ( protected val config: MNistConfig ) {
@@ -18,16 +21,18 @@ abstract class MNistRunner ( protected val config: MNistConfig ) {
   protected val session: SparkSession
   protected val sc: SparkContext
 
-  trait Setup {
-    val N_EPOCHS = 1
+  trait Config {
+    val N_TRAINING = 30000
+    val N_TEST = 1000
+    val N_EPOCHS = 10
     val reportEvery = 10
-    val eta: Double = 3e-5
-    val nbatches = 1000
-    val parallel = false
+    val eta: Double = 1e-5
+    val nbatches = 100
+    val parallelism = 4
     val task = false // task or data parallel
 
-    val theta1: INDArray = (Nd4j.rand(seed, 785, 100) - .5) / 1000
-    val theta2: INDArray = (Nd4j.rand(seed, 101, 10) - .5) / 1000
+    val theta1: INDArray = (Nd4j.rand(seed, 785, 200) - .5) / 1000
+    val theta2: INDArray = (Nd4j.rand(seed, 201, 10) - .5) / 1000
   }
 
   /**
@@ -67,6 +72,50 @@ abstract class MNistRunner ( protected val config: MNistConfig ) {
   }
 
 
+  def asImageString (iNDArray: INDArray) : String = {
+    val arr = toArray(iNDArray)
+    MNISTImage(arr.map(d=>d.toByte), 28, 28).toString
+  }
+
+
+
+  def randomTransform (
+                        trans: (Double, Double),
+                        angle: Integer, // in 360° units
+                        shear: (Double, Double),
+                        scale: (Double, Double),
+                        random: Random = new Random()): Affine = {
+
+    def rnd() = 2 * (random.nextDouble() -0.5)
+
+    val trans_h = rnd() * trans._1
+    val trans_v = rnd() * trans._2
+    val rot = rnd() * angle / 360 * 2 * math.Pi
+    val shear_h = rnd() * shear._1
+    val shear_v = rnd() * shear._2
+    val scale_h = 1 + random.nextDouble() * (scale._1 - 1)
+    val scale_v = 1 + random.nextDouble() * (scale._2 - 1)
+
+    Trans(trans_h, trans_v) °
+    Rotate(rot) °
+    Shear(shear_h, shear_v) °
+    Scale(scale_h, scale_v)
+
+  }
+
+  def playWith(data: INDArray): Unit = {
+
+    val img = new Grid(data.reshape(28,28))
+    val transform = randomTransform(trans=(3,0), angle=12, shear=(.1, 0), scale=(1.1, 1))
+    val td = transform(img)
+
+    println(img)
+    println(td)
+
+    println ("ccol")
+
+  }
+
   def main(args: Array[String]): Unit = {
 
     println("Starting...")
@@ -79,43 +128,34 @@ abstract class MNistRunner ( protected val config: MNistConfig ) {
     val labels = createLabelsFromBinary("input/train-labels").first()
     val labels_vector = labels.asINDarray
 
-    shuffle((images_vector, labels_vector))
+    // read the first sample file
+    val test_images: MNISTImages = createImagesFromBinary("input/test").first()
+    val ti_vector = test_images.asINDarray
 
-    // verify that the loaded and shuffled data is correct
-    ( 0 to 10 ).foreach (i => {
-      val row: INDArray = images_vector.getRow(i)
-      println(asString(row))
-      println("  ======================================>  " + labels.asINDarray.getRow(i))
-    })
+    // read the first label file
+    val test_labels = createLabelsFromBinary("input/test-labels").first()
+    val tl_vector = test_labels.asINDarray
 
-    new Setup {
+
+    //playWith(images_vector.getRow(0))
+
+    new Config {
       val nn: Layer = FCL(theta1) |:| ReLU() |:| FCL(theta2) |:| Sigmoid() |:| Euclidean()
 
       val probe: INDArray = images_vector.getRow(0)
       val wild_guess: INDArray = nn.ffwd(probe)
       val (d1, g1, c1): PROPAGATED = nn.fwbw(probe, labels_vector.getRow(0))
 
-      SimpleOptimizer.train(model = nn, nBatches = nbatches, parallelism = 1, task = task,
-        trainingSet = (images_vector, labels_vector), n_epochs = N_EPOCHS, eta = eta, reportEvery = reportEvery)
+      private val generator = () => randomTransform(trans=(1,0), angle = 12, shear=(.05, .05), scale = (1.1, 1), random = new Random )
 
-      val testSize = 100
-      val (samples, labels) = (images_vector(0 -> testSize, ->), labels_vector(0 -> testSize, ->))
-      val educated_guess: INDArray = nn.ffwd(samples)
+      private val optimizer = new SimpleOptimizer( generator = generator, random = new Random(seed))
 
-      for (i <- 0 until testSize) {
-        if (!matches(educated_guess(i, ->), labels(i, ->))) {
-          println(s"For ${asString(samples(i, ->))} got ${educated_guess(i, ->)}, but would expect ${labels(i, ->)}")
-        }
-      }
-
-      val success_rate: Double = (0 until testSize).
-        map(i => if (matches(educated_guess(i, ->), labels(i, ->))) 1 else 0).sum * 100.0 / testSize
-
-      println(s"Success rate: $success_rate")
+      optimizer.train(model = nn, nBatches = nbatches, parallelism = parallelism, task = task,
+        trainingSet = (images_vector(0->N_TRAINING, ->), labels_vector(0->N_TRAINING, ->)),
+        testSet = (ti_vector(0->N_TEST, ->), tl_vector(0->N_TEST, ->)),
+        n_epochs = N_EPOCHS, eta = eta, reportEvery = reportEvery)
 
     }
-
-
 
     session.stop()
   }

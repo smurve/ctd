@@ -19,6 +19,14 @@ class MNISTLabels( val bytes: Array[Byte] ) extends MNISTData with Serializable 
 
   val numLabels: Int = asInt(bytes.slice(4,8))
 
+  checkValues()
+
+  def checkValues(): Unit = {
+    for ( i <- 0 to 9) {
+      require(bytes.count(_ == 0) > 100, s"Not enough ${i}")
+    }
+  }
+
   def lv ( index: Int ) : Int = bytes(headerSize+index)
 
   def labelAsArray(lval: Int): Array[Double] = (0 to 9).map( i=> if (lval == i) 1.0 else 0.0).toArray
