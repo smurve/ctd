@@ -5,7 +5,11 @@ import org.scalactic.Equality
 import org.scalatest.{FlatSpec, ShouldMatchers}
 import org.smurve.transform._
 
+import scala.util.Random
+
 class AffineSpec extends FlatSpec with ShouldMatchers {
+
+  val seed = 123
 
   implicit val doubleEq: Equality[Double] = new Equality[Double] {
     override def areEqual(a: Double, b: Any): Boolean = a - b.asInstanceOf[Double] < 1e-7
@@ -71,7 +75,11 @@ class AffineSpec extends FlatSpec with ShouldMatchers {
     0, 0, 0, 0, 0, 0, 0, 0, 0).reshape(9, 9) * 1.11)
 
 
-
+  "Affine.rand" should "create a random Affine" in {
+    val affine = Affine.rand(30, shear_scale_var = .2, 2, 2)
+    println(square)
+    println(affine(square))
+  }
 
 
 

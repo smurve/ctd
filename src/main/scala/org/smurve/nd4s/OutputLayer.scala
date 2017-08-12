@@ -33,7 +33,7 @@ abstract class OutputLayer extends Layer {
     * @param y_bar the expected output
     * @return the cost at the given output y
     */
-  def c(y: INDArray, y_bar: INDArray ): Double
+  def cost(y: INDArray, y_bar: INDArray ): Double
 
   /**
     * @param x the input vector
@@ -43,7 +43,6 @@ abstract class OutputLayer extends Layer {
   def grad_c(x: INDArray, y_bar: INDArray): INDArray
 
   /**
-    *
     * @param rhs a layer
     * @return nothing
     * @throws UnsupportedOperationException, because this should be the last layer
@@ -58,7 +57,7 @@ abstract class OutputLayer extends Layer {
     * @param y_bar the batch of expected outcome row vectors
     * @return a PROPAGATED tuple
     */
-  override def fwbw(x: INDArray, y_bar: INDArray): PROPAGATED = (grad_c(x, y_bar), Nil, c(x, y_bar))
+  override def fwbw(x: INDArray, y_bar: INDArray): PROPAGATED = (grad_c(x, y_bar), Nil, cost(x, y_bar))
 
   /**
     * update pass ends here. Check if grads is empty and do nothing, throw

@@ -1,4 +1,4 @@
-package org.smurve
+package org.smurve.others
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SparkSession

@@ -5,93 +5,57 @@ import org.nd4s.Implicits._
 import org.smurve.transform.Affine
 
 import scala.collection.immutable.Seq
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Random
 
 /**
-  * Created by wgiersche on 26/07/17.
+  * A simple low-level SGD optimizer
+  * @param generator a function that returns Affine transformations to be applied before each epoch
+  * @param random the random to be used in shuffle and perturbation operations
   */
 class SimpleOptimizer(val generator: () => Affine,
                       random: Random) {
 
 
-  type FutureResults = Seq[Future[(List[INDArray], Double)]]
-  type Results = List[(List[INDArray], Double)]
-
+  /** summing grad and cost at once. Used in reduce phase */
   def sum(a: (Seq[INDArray], Double), b: (Seq[INDArray], Double)): (Seq[INDArray], Double) = {
-    val avgNabla = (a._1 zip b._1) map { case (l, r) => l + r }
-    val avgC = a._2 + b._2
-    (avgNabla, avgC)
+    val sumGrad = (a._1 zip b._1) map { case (gradA, gradB) => gradA + gradB }
+    val sumCost = a._2 + b._2
+    (sumGrad, sumCost)
   }
 
-  def collectResults(todo: FutureResults, done: Results): Results = {
-    if (todo.isEmpty)
-      done
-    else {
-      val res = Await.result(todo.head, Duration.Inf)
-      res :: collectResults(todo.tail, res :: done)
-    }
+  /**
+    * slice a block from the samples. Note that no data is copied here.
+    * @param blockSize the number of images in the block
+    * @param offset the offset to start from
+    * @param block the current index
+    * @param samples the INDarray of samples
+    * @param labels the INDArray of labels
+    * @return blocks of images and labels
+    */
+  def sliceBlock ( blockSize: Int, offset: Int, block: Int, samples: INDArray, labels: INDArray ): (INDArray, INDArray) = {
+    val fromIndex = offset + block * blockSize
+    val toIndex = fromIndex + blockSize
+
+    ( samples(fromIndex -> toIndex, ->), labels(fromIndex -> toIndex, ->))
   }
 
-  def train(model: Layer, nBatches: Int, parallel: Boolean, task: Boolean,
-            trainingSet: (INDArray, INDArray), n_epochs: Int, eta: Double, reportEvery: Int): Unit = {
-
-    println("Started training")
-    val t0 = System.currentTimeMillis()
-
-    val batchSize = trainingSet._1.size(0) / nBatches
-
-    for (epoch <- 0 to n_epochs) {
-
-      val (samples, labels) = shuffle(trainingSet)
-
-
-      val series = 0 until nBatches
-      val seq = if (parallel) series.par else series
-
-      val (g_total, c_total): (Seq[INDArray], Double) = if (task) {
-
-        /** Task parallelism */
-        val futures: FutureResults = series.map(j => {
-          val subs: INDArray = samples(j * batchSize -> (j + 1) * batchSize, ->)
-          val subl = labels(j * batchSize -> (j + 1) * batchSize, ->)
-          Future {
-            val (_, grads, c) = model.fwbw(subs, subl)
-            (grads, c)
-          }
-        })
-        collectResults(futures, Nil).reduce(sum)
-
-      } else {
-        /** Data Parallelism */
-        seq.map(j => {
-          val subs: INDArray = samples(j * batchSize -> (j + 1) * batchSize, ->)
-          val subl = labels(j * batchSize -> (j + 1) * batchSize, ->)
-          val (_, grads, c) = model.fwbw(subs, subl)
-          (grads, c)
-        }).reduce(sum)
-      }
-
-
-      model.update(g_total.map(_ * -eta))
-      if (epoch % reportEvery == 0)
-        println(s"Cost: $c_total")
-    }
-
-    val t1 = System.currentTimeMillis()
-    println(s"finished training after ${t1 - t0} ms.")
-
-  }
-
-  def train(model: Layer, nBatches: Int, parallelism: Integer, task: Boolean,
+  /**
+    * Train the model using SGD
+    * @param model the model to be trained
+    * @param nBatches number of batches
+    * @param parallelism number of parralel execution threads to use
+    * @param trainingSet the training set - images and labels
+    * @param testSet the test set - images and labels
+    * @param n_epochs number of epochs to spend training
+    * @param eta the *pesky* learning rate
+    * @param reportEvery number of batches to pass before reporting cost
+    */
+  def train(model: Layer, nBatches: Int, parallelism: Int =1,
             trainingSet: (INDArray, INDArray), testSet: (INDArray, INDArray),
             n_epochs: Int, eta: Double, reportEvery: Int): Unit = {
 
     assert(parallelism >= 1, "Parallelism can't be less than 1.")
 
-    println("Started training")
     val t0 = System.currentTimeMillis()
 
     val batchSize = trainingSet._1.size(0) / nBatches
@@ -102,24 +66,21 @@ class SimpleOptimizer(val generator: () => Affine,
 
       println(s"Starting epoch $epoch")
 
-      val (samples, labels) = shuffle(trainingSet, random = random, transform = generator.apply())
+      val (samples, labels) = shuffle(trainingSet, random = random, transform = generator())
 
       for (batchNo <- 0 until nBatches) {
 
         val offset = batchNo * batchSize
         val blocks = (0 until nBlocks).par
 
-        val (g_total, c_total): (Seq[INDArray], Double) =
-          blocks.map(block => {
-            val fromIndex = offset + block * blockSize
-            val toIndex = offset + (block + 1) * blockSize
-            val subs: INDArray = samples(fromIndex -> toIndex, ->)
-            val subl = labels(fromIndex -> toIndex, ->)
-            val (_, grads, c) = model.fwbw(subs, subl)
+        val (g_total, c_total): (Seq[INDArray], Double) = blocks.map(block => {
+            val (sample_block, label_block) = sliceBlock(blockSize, offset, block, samples, labels)
+            val (_, grads, c) = model.fwbw(sample_block, label_block)
             (grads, c)
           }).reduce(sum)
 
         model.update(g_total.map(_ * -eta))
+
         if (batchNo % reportEvery == 0)
           println(s"Cost: $c_total")
       }

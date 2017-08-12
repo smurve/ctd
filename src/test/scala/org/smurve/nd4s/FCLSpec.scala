@@ -40,7 +40,7 @@ class FCLSpec extends FlatSpec with ShouldMatchers {
     val y = vec(2, 5, 8, 2, 9, 16).reshape(2,3)
     val y_bar = vec(2, 6, 5, 3, 4, 6).reshape(2, 3)
     val output = Euclidean()
-    output.c(y, y_bar) shouldEqual 68
+    output.cost(y, y_bar) shouldEqual 68
     output.grad_c(y, y_bar) shouldEqual vec(0, -1, 3, -1, 5, 10).reshape(2,3)
   }
 

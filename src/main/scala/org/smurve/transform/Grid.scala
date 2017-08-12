@@ -20,7 +20,7 @@ import org.smurve.nd4s._
   *                 |
   *
   */
-class Grid(val field: INDArray) {
+class Grid(val field: INDArray, val useRegression: Boolean = false) {
 
   val height: Int = field.size(0)
   val width: Int = field.size(1)
@@ -101,15 +101,24 @@ class Grid(val field: INDArray) {
     /* 2D regression */
     else {
       val sector = neighbours(x, y)
-      val (a, b, c) = linReg(sector)
-      a * x + b * y + c
+      if ( useRegression ) {
+        val (a, b, c) = linReg(sector)
+        a * x + b * y + c
+      } else { // use average from neighbours
+        val tl = valueAt(_x(sector.left), _y(sector.top))
+        val bl = valueAt(_x(sector.left), _y(sector.bottom))
+        val tr = valueAt(_x(sector.right), _y(sector.top))
+        val br = valueAt(_x(sector.right), _y(sector.bottom))
+        (tl + bl + tr + br)/4
+      }
     }
 
     math.max(res, 0)
   }
 
   /**
-    * calculate the regression plane in the given sector analytically
+    * Calculate the regression plane in the given sector analytically.
+    * Computationally expensive. Use only if performance is none of your concern.
     *
     * @param sector the target sector
     * @return the parameters a, b, and c of the plane, such that z = a*x + b*y + c

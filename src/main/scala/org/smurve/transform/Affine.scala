@@ -5,6 +5,11 @@ import org.nd4j.linalg.factory.Nd4j
 import org.smurve.nd4s._
 import org.nd4s.Implicits._
 
+import scala.util.Random
+
+/**
+  * 2-DIM Affine transformation for image processing
+  */
 trait Affine  {
 
   private val me = this
@@ -57,7 +62,46 @@ trait Affine  {
 }
 
 object Affine {
+
   val identity = new Affine {
     override def invMap(x: INDArray): INDArray = x
   }
+
+  /**
+    * create an Affine transformation from the parameters of the *inverse* transformation
+    *
+    * @param t00 x to x of the linear matrix
+    * @param t01 x to y of the linear matrix
+    * @param t10 y to x of the linear matrix
+    * @param t11 y to x of the linear matrix
+    * @param x translate x
+    * @param y translate y
+    * @return
+    */
+  def fromParams ( t00:Double, t01:Double, t10:Double, t11:Double, x:Double, y:Double ): Affine = new Affine {
+
+    private val b = vec(x,y)
+    private val _M = vec(t00, t01, t10, t11).reshape(2,2)
+
+    override def invMap(x: INDArray): INDArray = {
+      (_M ** x.T + b.T).T
+    }
+  }
+
+  def rand(maxAngle: Int = 0, shear_scale_var: Double = 0,
+           max_trans_x: Double = 0, max_trans_y: Double = 0,
+           random: Random = new Random): Affine = {
+
+    def rnd() = 2 * (random.nextDouble() - 0.5)
+
+    val sh = shear_scale_var * rnd()
+    val angle = maxAngle / 360.0 * 2 * math.Pi * rnd()
+    val c = math.cos(angle) * (1 + rnd() * shear_scale_var)
+    val s = math.sin(angle) * (1 + rnd() * shear_scale_var)
+    val x = max_trans_x * rnd()
+    val y = max_trans_y * rnd()
+    fromParams(c + sh*s, s + sh*c, -s+sh*c, c+sh*s, x, y)
+  }
+
+
 }

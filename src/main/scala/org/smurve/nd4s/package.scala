@@ -75,8 +75,6 @@ package object nd4s {
     */
   def shuffle(labeledData: (INDArray, INDArray), random: Random = new Random, transform: Affine = Affine.identity): (INDArray, INDArray) = {
 
-    print("Starting to shuffle...")
-
     def copy ( from: INDArray, to: INDArray): Unit = {
       val l = from.length()
       (0 until l).foreach(i=>to(i)=from(i))
@@ -100,8 +98,6 @@ package object nd4s {
       copy(labels.getRow(j), labels.getRow(i))
       copy(swapLabel, labels.getRow(j))
     })
-
-    println("Done.")
 
     if ( transform != Affine.identity ) {
       print("Starting to perturb...")

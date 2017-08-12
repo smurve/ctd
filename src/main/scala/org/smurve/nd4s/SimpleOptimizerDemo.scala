@@ -12,27 +12,42 @@ import scala.util.Random
   */
 object SimpleOptimizerDemo  {
 
-  type TrainingSet = (INDArray, INDArray)
-
+  type LabeledSet = (INDArray, INDArray)
   val seed = 128L
   val rnd = new Random(seed)
 
   trait Setup {
     val (x1c, x2c) = (3, 3)
-    val N_t = 600
-    val N_EPOCHS = 500
+    val N_train = 20000
+    val N_test = 1000
+    val N_EPOCHS = 20
     val reportEvery = 20
-    val eta: Double = 1e-3
-    val scale = 1.0
-    val nbatches = 1
+    val eta: Double = 3e-3
+    val nbatches = 100
     val parallel = false
     val task = false // task or data parallel
 
-    val trSet: TrainingSet = createLabeledSet(N_t, x1c, x2c)
+    val trSet: LabeledSet = createLabeledSet(N_train, x1c, x2c)
+    val testSet: LabeledSet = createLabeledSet(N_test, x1c, x2c)
+
+    val scale = 1.0
     val theta1: INDArray = (Nd4j.rand(seed, 3, 10) - .5) / scale
     val theta2: INDArray = (Nd4j.rand(seed, 11, 4) - .5) / scale
   }
 
+  def main(args: Array[String]): Unit = {
+    new Setup {
+
+      val nn: Layer = FCL(theta1) |:| ReLU() |:| FCL(theta2) |:| Sigmoid() |:| Euclidean()
+
+      val optimizer = new SimpleOptimizer(()=>Affine.identity, random = new Random(seed))
+
+      optimizer.train(
+        model = nn, nBatches = nbatches, parallelism = 4,
+        trainingSet = trSet, testSet = testSet,
+        n_epochs = N_EPOCHS, eta = eta, reportEvery = reportEvery)
+    }
+  }
 
   /**
     * provide a list of points around the given center and identify the quadrant as in
@@ -66,32 +81,6 @@ object SimpleOptimizerDemo  {
     (found zip given).map(p => p._2 == 1.0 && p._1 > 0.5).reduce(_ || _)
   }
 
-  def main(args: Array[String]): Unit = {
-    new Setup {
 
-      val nn: Layer = FCL(theta1) |:| ReLU() |:| FCL(theta2) |:| Sigmoid() |:| Euclidean()
 
-      val wild_guess: INDArray = nn.ffwd(vec(1, 1))
-      val (d1, g1, c1): PROPAGATED = nn.fwbw(vec(1, 1), vec(1, 0, 0, 0))
-
-      val optimizer = new SimpleOptimizer(()=>Affine.identity, random = new Random(seed))
-      optimizer.train(model = nn, nBatches = nbatches, parallel = parallel, task = task,
-        trainingSet = trSet, n_epochs = N_EPOCHS, eta = eta, reportEvery = reportEvery)
-
-      val testSize = 100
-      val (samples, labels): (INDArray, INDArray) = createLabeledSet(testSize, 3, 3)
-      val educated_guess: INDArray = nn.ffwd(samples)
-
-      for (i <- 0 until testSize) {
-        if (!matches(educated_guess(i, ->), labels(i, ->))) {
-          println(s"For ${samples(i, ->)} got ${educated_guess(i, ->)}, but would expect ${labels(i, ->)}")
-        }
-      }
-
-      val success_rate: Double = (0 until testSize).
-        map(i => if (matches(educated_guess(i, ->), labels(i, ->))) 1 else 0).sum * 100.0 / testSize
-
-      println(s"Success rate: $success_rate")
-    }
-  }
 }
