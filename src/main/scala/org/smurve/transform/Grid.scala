@@ -35,8 +35,6 @@ class Grid(val field: INDArray, val useRegression: Boolean = false) {
   case class Sector(top: Int, left: Int, bottom: Int, right: Int) {
     require(top >= 0)
     require(left >= 0)
-    if ( bottom >= height )
-      println("oop")
     require(bottom < height, "bottom must be smaller than height")
     require(right < width)
   }
