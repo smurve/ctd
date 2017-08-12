@@ -16,21 +16,23 @@ import org.smurve.transform._
 import scala.util.Random
 
 
-abstract class MNistRunner(protected val config: MNistConfig) {
+abstract class MNistRunner(protected val config: MNistConfig) extends MNISTTools {
 
   protected val session: SparkSession
   protected val sc: SparkContext
 
   trait Params {
 
-    val N_TRAINING = 6000
-    val N_TEST = 1000
-    val N_EPOCHS = 5
+    var STORE_AS = "target/tmp/MNIST_DEMO"
+    val N_TRAINING = 6000 // max 60000
+    val N_TEST = 1000 // max 10000
+    val N_EPOCHS = 3
+    val eta: Double = 1e-4 // try 1e-2 to 1e-5 by factors of 3
+
+    val nbatches = 600
     val reportEvery = 10
-    val eta: Double = 1e-4
-    val nbatches = 100
+
     val parallelism = 4
-    val task = false // task or data parallelism
 
     val theta1: INDArray = (Nd4j.rand(seed, 785, 200) - .5) / 1000
     val theta2: INDArray = (Nd4j.rand(seed, 201, 10) - .5) / 1000
@@ -66,10 +68,34 @@ abstract class MNistRunner(protected val config: MNistConfig) {
         testSet = testSet,
         n_epochs = N_EPOCHS, eta = eta, reportEvery = reportEvery)
 
+      saveModel ( STORE_AS, Map("Theta1"->theta1, "Theta2"->theta2))
+
+      readAndInferModel (STORE_AS, theta1, theta2, testSet._1(0->10, ->))
     }
+
 
     session.stop()
   }
+
+  /**
+    * just for demo purpose: Read the weights and infer from the given samples, printing the first result
+    * @param name the base name of the parameter file
+    * @param theta1 the first FCL's weights
+    * @param theta2 the second FCL's weights
+    * @param testSet the subset to infer from
+    */
+  def readAndInferModel(name: String, theta1: INDArray, theta2: INDArray, testSet: INDArray ): Unit = {
+    val weights = readModel ( name, List("Theta1", "Theta2"))
+    val theta1_from_file = weights("Theta1")
+    val theta2_from_file = weights("Theta2")
+    val new_network: Layer = FCL(theta1) |:| ReLU() |:| FCL(theta2) |:| Sigmoid() |:| Euclidean()
+    val res = new_network.ffwd(testSet)
+    val sample = testSet(0,->)
+    println(new Grid(sample.reshape(28,28)))
+    println(res(0,->))
+    println("Bye.")
+  }
+
 
   /**
     * Read the data files

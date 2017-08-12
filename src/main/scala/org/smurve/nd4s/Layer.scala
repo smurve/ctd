@@ -2,6 +2,13 @@ package org.smurve.nd4s
 
 import org.nd4j.linalg.api.ndarray.INDArray
 
+/**
+  * math-driven design of a network layer based on ND4J Linear Algebra implementation
+  * A layer is designed as a parameterized function.
+  * A network is a composition of layers, ending with an Outputlayer to the right and represented by the leftmost layer.
+  * Forward pass and backprop must be implemented such that the subsequent layer is taken into account.
+  * See e.g. FCL implementation for details
+  */
 trait Layer {
 
   private var next: Option[Layer] = None
@@ -9,7 +16,7 @@ trait Layer {
   /**
     * present the next layer
     *
-    * @return the next layer. There MUST be one
+    * @return the next layer. There must be one, unless you override this in output layers
     */
   def nextLayer: Layer = next.getOrElse(throw new IllegalStateException(
     "Network shouldn't end here. Are you missing an output layer?"))
@@ -48,10 +55,16 @@ trait Layer {
     */
   def fwbw(x: INDArray, y_bar: INDArray): PROPAGATED
 
+  /**
+    * update the weights using the head of the Seq
+    * implementers must forward the tail to the subsequent layers
+    * @param grads the amount to be added
+    */
   def update (grads: Seq[INDArray]): Unit
 
   /**
     * Stacking operator with output.
+    * Note that after composition, 'this' also represents the subsequent layer
     *
     * @param outputLayer an output layer
     * @return this
@@ -69,6 +82,11 @@ trait Layer {
     case None => this
   }
 
+  /**
+    * Composing two layers
+    * @param next the subsequent layer
+    * @return 'this', now representing the composition
+    */
   def |:|(next: Layer): Layer = {
     val r = rightmost
     r.inititialize(next)

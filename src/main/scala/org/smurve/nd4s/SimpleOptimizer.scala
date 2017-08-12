@@ -71,8 +71,11 @@ class SimpleOptimizer(val generator: () => Affine,
       for (batchNo <- 0 until nBatches) {
 
         val offset = batchNo * batchSize
-        val blocks = (0 until nBlocks).par
 
+        /**
+          * Here, we parallelize by mapping each batch to blocks and reducing (summing the gradients) afterwards
+          */
+        val blocks = (0 until nBlocks).par
         val (g_total, c_total): (Seq[INDArray], Double) = blocks.map(block => {
             val (sample_block, label_block) = sliceBlock(blockSize, offset, block, samples, labels)
             val (_, grads, c) = model.fwbw(sample_block, label_block)
@@ -85,16 +88,8 @@ class SimpleOptimizer(val generator: () => Affine,
           println(s"Cost: $c_total")
       }
 
-      val N_TEST = testSet._2.size(0)
-      val res = model.ffwd(testSet._1)
+      validate(model, testSet)
 
-      val success = ( 0 until N_TEST).map( i=>{
-        val pred = res(i,->)
-        val label = testSet._2(i, ->)
-        if ( equiv( pred, label) ) 1.0 else 0.0
-      }).sum / N_TEST
-
-      println( s"Success rate: ${(success*1000).toInt/10.0}")
     }
 
     val t1 = System.currentTimeMillis()
@@ -102,5 +97,24 @@ class SimpleOptimizer(val generator: () => Affine,
 
   }
 
+
+  /**
+    * Validate the model against a given test set
+    * @param model the model to validate
+    * @param testSet the pair of images/labels to validate against
+    */
+  def validate ( model: Layer, testSet: (INDArray, INDArray)): Unit = {
+    val N_TEST = testSet._2.size(0)
+    val res = model.ffwd(testSet._1)
+
+    val success = ( 0 until N_TEST).map( i=>{
+      val pred = res(i,->)
+      val label = testSet._2(i, ->)
+      if ( equiv( pred, label) ) 1.0 else 0.0
+    }).sum / N_TEST
+
+    println( s"Success rate: ${(success*1000).toInt/10.0}")
+
+  }
 
 }
