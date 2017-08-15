@@ -51,11 +51,12 @@ case class AvgPooling (depth_stride: Int, height_stride: Int, width_stride: Int)
 
     for {
       od <- 0 until dC_dy.size(0)
-      or <- 0 until dC_dy.size(1) by height_stride
-      oc <- 0 until dC_dy.size(2) by width_stride
+      or <- 0 until dC_dy.size(1)
+      oc <- 0 until dC_dy.size(2)
+
       d <- 0 until depth_stride
-      r <- or until or + height_stride
-      c <- oc until oc + width_stride
+      r <- or * height_stride until (or + 1) * height_stride
+      c <- oc * width_stride until (oc + 1) * width_stride
 
       // chain rule again: 1/N = dy/dx
       } dC_dx(od, d, r, c) = dC_dy(od, or, oc) / N_values

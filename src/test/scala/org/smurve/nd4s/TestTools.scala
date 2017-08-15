@@ -10,17 +10,18 @@ trait TestTools {
   case class Precision(epsilon: Double)
 
   // to avoid potential interference by making a Double implicit
-  implicit val PRECISION: Precision = Precision(1e-3)
+  implicit val PRECISION: Precision = Precision(1e-2)
 
   implicit val doubleEq: Equality[Double] = new Equality[Double] {
-    override def areEqual(a: Double, b: Any): Boolean = a - b.asInstanceOf[Double] < PRECISION.epsilon
+    override def areEqual(a: Double, b: Any): Boolean = math.abs(a - b.asInstanceOf[Double]) < PRECISION.epsilon
   }
 
   /**
     * INDArray equality to a certain precision
     */
   implicit val nd4jEq: Equality[INDArray] = new Equality[INDArray] {
-    override def areEqual(a: INDArray, b: Any): Boolean = a - b.asInstanceOf[INDArray] < PRECISION.epsilon
+    override def areEqual(a: INDArray, b: Any): Boolean =
+      a - b.asInstanceOf[INDArray] < PRECISION.epsilon && a - b.asInstanceOf[INDArray] > -PRECISION.epsilon
   }
 
   /**

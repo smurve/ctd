@@ -122,8 +122,8 @@ class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools{
       val y: INDArray = conv.fun(x)
       y shouldEqual expected_conv_result
 
-      conv.dy_dx(0, 1, 2, 0, 1, 1) shouldEqual 0 // x_011 is not involved in computing y_012
-      conv.dy_dx(0, 1, 2, 0, 1, 2) shouldEqual 1 // theta_010 = first LRF, second row (below the bias!), first column
+      conv.dy_dx(0, 1, 2, 0, 1, 1) shouldEqual 0.0 // x_011 is not involved in computing y_012
+      conv.dy_dx(0, 1, 2, 0, 1, 2) shouldEqual 1.0 // theta_010 = first LRF, second row (below the bias!), first column
     }
   }
 
@@ -146,7 +146,7 @@ class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools{
   "A conv layer" should "compute dy/dtheta as the x values involved to produce y from theta" in {
 
     new TestData {
-      conv.dy_dTheta(5, 3, 2, 1, 2, 0, x) shouldEqual 0
+      conv.dy_dTheta(5, 3, 2, 1, 2, 0, x) shouldEqual 0.0
 
       conv.dy_dTheta(5, 3, 2, 2, 1, 0, x) shouldEqual x(1, 3, 2)
       conv.dy_dTheta(5, 3, 2, 2, 1, 1, x) shouldEqual x(1, 3, 3)
@@ -190,10 +190,10 @@ class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools{
       val input: INDArray = expected_conv_result
       val y_bar: INDArray = expected_pool_result.ravel
       val propd: (INDArray, List[INDArray], Double) = poolNet.fwbw(input, y_bar)
-      propd._1.sum(Array(0, 1, 2, 3): _*)(0) shouldEqual 0 // we're at the global minimum
+      propd._1.sum(Array(0, 1, 2, 3): _*)(0) shouldEqual 0.0 // we're at the global minimum
 
       y_bar(4) = 2 // gives us dC/dy = (0,0,0,0,2,0,0,0,0,0,0,0) from the output layer
-      val propd1: (INDArray, List[INDArray], Double) = poolNet.fwbw(x, y_bar)
+      val propd1: (INDArray, List[INDArray], Double) = poolNet.fwbw(input, y_bar)
       val dC_dx: INDArray = propd1._1
       dC_dx(0, 0, ->, ->) shouldEqual zeroMap
       dC_dx(0, 1, ->, ->) shouldEqual zeroMap
@@ -223,12 +223,12 @@ class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools{
       val denseNet: Layer = Flatten(3, 2, 2) |:| dense |:| output
 
       val input: INDArray = expected_pool_result
-      val y_bar: INDArray = vec(30, -32)
+      val y_bar: INDArray = vec(30, -31)
 
       val (from_backprop,_,_) = denseNet.fwbw(input, y_bar)
       val numerical: INDArray = df_dx(cost(denseNet, y_bar))(input)
 
-      numerical shouldEqual from_backprop
+      from_backprop shouldEqual numerical
     }
   }
 
@@ -245,7 +245,7 @@ class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools{
       val (from_backprop,_,_) = poolnet.fwbw(input, y_bar)
       val numerical: INDArray = df_dx(cost(poolnet, y_bar))(input)
 
-      numerical shouldEqual from_backprop
+      from_backprop shouldEqual numerical
     }
   }
 
@@ -255,23 +255,13 @@ class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools{
     new TestData {
       val convnet: Layer = conv |:| pool |:| dense |:| output
 
-      val (id, ir, ic) = (1, 2, 2)
       val y_bar: INDArray = vec(30, -32)
-      val epsilon = 1e-2
-      val propd_m: PROPAGATED = convnet.fwbw(x, y_bar)
-      x(id, ir, ic) = x(id, ir, ic) + epsilon
-      val propd_r: PROPAGATED = convnet.fwbw(x, y_bar)
-      val Cr: Double = propd_r._3
 
-      x(id, ir, ic) = x(id, ir, ic) - epsilon
-      val propd_l: PROPAGATED = convnet.fwbw(x, y_bar)
-      val Cl: Double = propd_l._3
+      val ( from_backprop,_,_) = convnet.fwbw(x, y_bar)
+      val numerical: INDArray = df_dx(cost(convnet, y_bar))(x)
 
-      val dC_dx_n: Double = (Cr - Cl) / 2 / epsilon // numeric
-      val dC_dx_b: INDArray = propd_m._1 // backprop
+      from_backprop shouldEqual numerical
 
-      // compare backprop to numeric approximation
-      dC_dx_b(id, ir, ic) shouldEqual dC_dx_n
     }
   }
 }

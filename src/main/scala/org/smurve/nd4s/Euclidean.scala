@@ -15,7 +15,7 @@ case class Euclidean() extends OutputLayer {
     */
   override def cost(y: INDArray, y_bar: INDArray ): Double = {
     val diff =  y - y_bar
-    val prod = diff ** diff.T
+    val prod = diff * diff
     prod.sumT[Double] * .5
   }
 
