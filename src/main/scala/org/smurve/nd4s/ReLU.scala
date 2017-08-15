@@ -24,7 +24,7 @@ case class ReLU() extends Activation {
     * @param y_bar the batch of expected outcome row vectors
     */
   override def fwbw(x: INDArray, y_bar: INDArray): (INDArray, List[INDArray], Double) = {
-    val (delta, grads, c) = nextLayer.fwbw(fun(x), y_bar)
-    (delta * f_prime(x), grads, c)
+    val (dC_dy, grads, c) = nextLayer.fwbw(fun(x), y_bar)
+    (dC_dy * f_prime(x), grads, c)
   }
 }

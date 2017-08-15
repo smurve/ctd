@@ -5,7 +5,7 @@ import scala.language.postfixOps
 
 /**
   * Fully connected layer. Just needs to implement fwbw
-  * @param theta the weight matrix
+  * @param theta the weight matrix including the bias as 0th row
   */
 case class FCL(theta: INDArray) extends Layer {
 

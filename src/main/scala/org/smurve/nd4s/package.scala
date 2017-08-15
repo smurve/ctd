@@ -19,16 +19,17 @@ package object nd4s {
     * _2: List of all dC/dTheta gradients of the subsequent layers. Prepend your grad to bevor returning from fwbw
     * _3: the current cost
     */
-  type PROPAGATED = (INDArray, List[INDArray], Double )
+  type PROPAGATED = (INDArray, List[INDArray], Double)
 
   /**
     * vertically "pad" with ones.
     *
-    *                     1  1
+    * 1  1
     *
-    *        a  b         a  b
-    *                =>
-    *        c  d         c  d
+    * a  b         a  b
+    * =>
+    * c  d         c  d
+    *
     *
     * @param x the input
     * @return the input matrix, padded with ones
@@ -38,9 +39,10 @@ package object nd4s {
   /**
     * horizontically "pad" with ones.
     *
-    *        a  b         1  a  b
-    *                =>
-    *        c  d         1  c  d
+    * a  b         1  a  b
+    * =>
+    * c  d         1  c  d
+    *
     *
     * @param x the input
     * @return the input matrix, padded with ones
@@ -49,6 +51,7 @@ package object nd4s {
 
   /**
     * convenience vector literals
+    *
     * @param arr the numbers to make up the INDArray
     * @return the INDArray containing those numbers
     */
@@ -59,12 +62,12 @@ package object nd4s {
     * work-around for broken map() on INDArray
     * Only supporting tensors of rank 1 and 2
     */
-  def appf(x: INDArray, f: Double=>Double ): INDArray = {
+  def appf(x: INDArray, f: Double => Double): INDArray = {
     val res = Nd4j.zeros(x.shape: _*)
     val shape1 = if (x.shape.length == 1) 1 +: x.shape else x.shape
-    for ( i <- 0 until shape1(0))
-      for ( j <- 0 until shape1(1))
-        res(i,j) = f(x(i,j))
+    for (i <- 0 until shape1(0))
+      for (j <- 0 until shape1(1))
+        res(i, j) = f(x(i, j))
     res
   }
 
@@ -75,11 +78,12 @@ package object nd4s {
     */
   def shuffle(labeledData: (INDArray, INDArray), random: Random = new Random, transform: Affine = Affine.identity): (INDArray, INDArray) = {
 
-    def copy ( from: INDArray, to: INDArray): Unit = {
+    def copy(from: INDArray, to: INDArray): Unit = {
       val l = from.length()
-      (0 until l).foreach(i=>to(i)=from(i))
+      (0 until l).foreach(i => to(i) = from(i))
     }
-    val ( samples, labels ) = labeledData
+
+    val (samples, labels) = labeledData
 
     val sampleSize = samples.size(1)
     val swapSample = Nd4j.zeros(sampleSize)
@@ -87,19 +91,19 @@ package object nd4s {
     val labelSize = labels.size(1)
     val swapLabel = Nd4j.zeros(labelSize)
 
-    ( 0 until sampleSize).foreach (i=> {
+    (0 until sampleSize).foreach(i => {
       val j = random.nextInt(sampleSize)
 
-      copy(samples.getRow(i), swapSample )
+      copy(samples.getRow(i), swapSample)
       copy(samples.getRow(j), samples.getRow(i))
       copy(swapSample, samples.getRow(j))
 
-      copy(labels.getRow(i), swapLabel )
+      copy(labels.getRow(i), swapLabel)
       copy(labels.getRow(j), labels.getRow(i))
       copy(swapLabel, labels.getRow(j))
     })
 
-    if ( transform != Affine.identity ) {
+    if (transform != Affine.identity) {
       print("Starting to perturb...")
       (0 until sampleSize by 10).foreach(i => {
 
@@ -129,7 +133,7 @@ package object nd4s {
     labeledData
   }
 
-  private def tick(key: String ): Unit = {
+  private def tick(key: String): Unit = {
     val t = System.currentTimeMillis()
     val entry = bucket.get(key)
     if (entry.isDefined) {
@@ -144,9 +148,11 @@ package object nd4s {
 
   private val bucket = mutable.HashMap[String, (Long, Long)]()
 
-  def toArray (iNDArray: INDArray, width: Int = 28, height: Int = 28): Array[Double] = {
+  def toArray(iNDArray: INDArray, width: Int = 28, height: Int = 28): Array[Double] = {
     val length = iNDArray.length
-    val array = Array.fill(length){0.0}
+    val array = Array.fill(length) {
+      0.0
+    }
 
     array.indices.foreach { index =>
       array(index) = iNDArray.getDouble(index)
@@ -156,11 +162,23 @@ package object nd4s {
 
   def equiv(classification: INDArray, label: INDArray): Boolean = {
     val max = classification.max(1).getDouble(0)
-    val lbl_icx = (label ** vec(0,1,2,3,4,5,6,7,8,9).T).getDouble(0).toInt
+    val lbl_icx = (label ** vec(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).T).getDouble(0).toInt
     val res = max == classification.getDouble(lbl_icx)
     res
   }
 
+
+  /**
+    * Utilty function to create multi-index Seq e.g. for iterating over entire tensors
+    * create a cross-product-like Seq of triples from three Seqs of Ints
+    * @param s1 the outermost sequence
+    * @param s2 the middle sequence
+    * @param s3 the innermost sequence
+    * @return a Sequence of triples
+    */
+  def multiIndex(s1: Seq[Int], s2: Seq[Int], s3: Seq[Int]): Seq[(Int, Int, Int)] =
+    s1.flatMap(i => s2.map(j => (i, j)))
+      .flatMap(p => s3.map(k => (p._1, p._2, k)))
 
 
 }

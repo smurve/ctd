@@ -65,12 +65,18 @@ val (depth_i, height_i, width_i) = (2, 14, 14)
 val (depth_t, height_t, width_t) = (3, 6, 5)
 
 
+val indices =
+  (0 until 3)
+  .flatMap(i => (3 until 6).map(j=>(i,j)))
+    .flatMap(p=>(7 until 10).map(k=>(p._1, p._2, k)))
+
+val sums = for ( (i,j,k) <- indices ) yield  i + j + k
+
 def id_od(od: Int) = od / depth_t
 def td_od(od: Int) = od % depth_t
 def ir_or_tr(or: Int, tr: Int) = or + tr - 1
 def ic_oc_tc(oc: Int, tc: Int) = oc + tc
 def idrc(or: Int, od: Int, oc: Int, tr: Int, tc: Int) = (id_od(od), ir_or_tr(or, tr), ic_oc_tc(oc, tc))
-
 
 
 def convolve(): Unit =
@@ -89,12 +95,11 @@ def convolve(): Unit =
         }
       }
 
-val res = out(2, ->, ->)
+convolve()
 
+val out1 = out.reshape(3,2,10,10)
 
-
-
-
+val res = out1(1, 1, ->, ->)
 
 
 
