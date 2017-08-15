@@ -13,7 +13,8 @@ case class FCL(theta: INDArray) extends Layer {
 
   def fwbw(x: INDArray, y_bar: INDArray): PROPAGATED = {
     val (dC_dy, grads, cost) = nextLayer.fwbw(fun(x), y_bar)
-    val dC_dx = dC_dy ** theta(1->,->).T
+    val theta_t = theta(1->,->).T
+    val dC_dx = dC_dy ** theta_t
     val grad = h1(x).T ** dC_dy
     (dC_dx, grad :: grads, cost)
   }

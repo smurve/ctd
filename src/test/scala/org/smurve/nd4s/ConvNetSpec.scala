@@ -5,7 +5,7 @@ import org.nd4j.linalg.factory.Nd4j
 import org.scalatest.{FlatSpec, ShouldMatchers}
 import org.nd4s.Implicits._
 
-class ConvNetSpec extends FlatSpec with ShouldMatchers {
+class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools{
 
   trait TestData {
     val x: INDArray = vec(
@@ -215,68 +215,37 @@ class ConvNetSpec extends FlatSpec with ShouldMatchers {
     }
   }
 
+
   "A dense net" should "compute backprop dC/dx correctly" in {
 
     new TestData {
-      val densenet: Layer = Flatten(3, 2, 2) |:| dense |:| output
+
+      val denseNet: Layer = Flatten(3, 2, 2) |:| dense |:| output
+
       val input: INDArray = expected_pool_result
-
-      val (id, ir, ic) = (2, 1, 1)
       val y_bar: INDArray = vec(30, -32)
-      implicit val epsilon = 1e-2
 
-      val propd: PROPAGATED = densenet.fwbw(input, y_bar)
+      val (from_backprop,_,_) = denseNet.fwbw(input, y_bar)
+      val numerical: INDArray = df_dx(cost(denseNet, y_bar))(input)
 
-      def cost(x:INDArray): Double = densenet.fwbw(x, y_bar)._3
-
-      val numerical: INDArray = df_dx(cost)(input)
-
-      numerical shouldEqual propd._1
+      numerical shouldEqual from_backprop
     }
-  }
-
-
-  /** numerically compute the gradient with regards to x */
-  def df_dx(f: INDArray => Double)(x: INDArray)(implicit epsilon: Double): INDArray = {
-    val l = x.length
-    def epsvec(k: Int) = {
-      val res = Nd4j.zeros(l)
-      res(k) = epsilon
-      res
-    }
-
-    val res = Nd4j.zeros(l)
-    for (i <- 0 until x.length()) {
-      res(i) = (f(x + epsvec(i)) - f(x - epsvec(i))) / 2 / epsilon
-    }
-    res.reshape(x.shape: _*)
   }
 
 
   "A pool net" should "compute backprop dC/dx correctly" in {
 
     new TestData {
+
       val poolnet: Layer = pool |:| dense |:| output
+
       val input: INDArray = expected_conv_result
-
-      val (in, id, ir, ic) = (2, 1, 1, 1)
       val y_bar: INDArray = vec(30, -32)
-      val epsilon = 1e-2
-      val propd_m: PROPAGATED = poolnet.fwbw(input, y_bar)
 
-      input(id, ir, ic) = input(in, id, ir, ic) + epsilon
-      val propd_r: PROPAGATED = poolnet.fwbw(input, y_bar)
-      val Cr: Double = propd_r._3
+      val (from_backprop,_,_) = poolnet.fwbw(input, y_bar)
+      val numerical: INDArray = df_dx(cost(poolnet, y_bar))(input)
 
-      input(id, ir, ic) = input(in, id, ir, ic) - epsilon
-      val propd_l: PROPAGATED = poolnet.fwbw(input, y_bar)
-      val Cl: Double = propd_l._3
-
-      val dC_dx_n: Double = (Cr - Cl) / 2 / epsilon // numeric
-      val dC_dx_b: INDArray = propd_m._1 // backprop
-
-      // compare backprop to numeric approximation
-      dC_dx_b(in, id, ir, ic) shouldEqual dC_dx_n
+      numerical shouldEqual from_backprop
     }
   }
 

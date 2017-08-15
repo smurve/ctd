@@ -64,13 +64,6 @@ case class AvgPooling (depth_stride: Int, height_stride: Int, width_stride: Int)
   }
 
 
-  def dy_dx(od: Int, or: Int, oc: Int, id: Int, id2: Int, ir: Int, ic: Int) = {
-
-
-    ???
-  }
-
-
   /**
     * No params - nothing to do here. Just forward
     * @param grads the amount to be added
