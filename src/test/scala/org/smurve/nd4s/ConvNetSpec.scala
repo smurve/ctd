@@ -1,9 +1,8 @@
 package org.smurve.nd4s
 
 import org.nd4j.linalg.api.ndarray.INDArray
-import org.nd4j.linalg.factory.Nd4j
-import org.scalatest.{FlatSpec, ShouldMatchers}
 import org.nd4s.Implicits._
+import org.scalatest.{FlatSpec, ShouldMatchers}
 
 class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools{
 
@@ -100,8 +99,8 @@ class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools{
 
     val conv = Conv(theta1, depth_input = 2, height_input = 5, width_input = 5)
     val pool: Layer = (
-      AvgPooling(depth_stride = 2, height_stride = 2, width_stride = 2)
-        |:| Flatten(3, 2, 2)).asInstanceOf[AvgPooling]
+      AvgPool(depth_stride = 2, height_stride = 2, width_stride = 2)
+        |:| Flatten(3, 2, 2)).asInstanceOf[AvgPool]
     val dense = FCL(theta2)
     val output = Euclidean()
   }
@@ -162,48 +161,6 @@ class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools{
     }
   }
 
-  "An avg pool" should "produce the correctly averaged rank 3 tensor" in {
-    new TestData {
-      val y: INDArray = pool.fun(expected_conv_result)
-      y shouldEqual expected_pool_result
-    }
-  }
-
-  "An avg pool" should "calculate averages over width, height, and depth" in {
-    new TestData {
-      val poolNet: Layer = pool |:| output
-
-      val input: INDArray = expected_conv_result
-      poolNet.ffwd(input) shouldEqual expected_pool_result.ravel
-    }
-  }
-
-  "An avg pool" should "calculate the correct partial derivatives" in {
-    new TestData {
-      val poolNet: Layer = pool |:| output
-      val zeroMap: INDArray = Nd4j.zeros(4, 4)
-      val someDeriv: INDArray = vec(
-        .25, .25, 0, 0,
-        .25, .25, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 0).reshape(4, 4)
-      val input: INDArray = expected_conv_result
-      val y_bar: INDArray = expected_pool_result.ravel
-      val propd: (INDArray, List[INDArray], Double) = poolNet.fwbw(input, y_bar)
-      propd._1.sum(Array(0, 1, 2, 3): _*)(0) shouldEqual 0.0 // we're at the global minimum
-
-      y_bar(4) = 2 // gives us dC/dy = (0,0,0,0,2,0,0,0,0,0,0,0) from the output layer
-      val propd1: (INDArray, List[INDArray], Double) = poolNet.fwbw(input, y_bar)
-      val dC_dx: INDArray = propd1._1
-      dC_dx(0, 0, ->, ->) shouldEqual zeroMap
-      dC_dx(0, 1, ->, ->) shouldEqual zeroMap
-      dC_dx(1, 0, ->, ->) shouldEqual someDeriv
-      dC_dx(1, 1, ->, ->) shouldEqual someDeriv
-      dC_dx(2, 0, ->, ->) shouldEqual zeroMap
-      dC_dx(2, 1, ->, ->) shouldEqual zeroMap
-    }
-  }
-
   "A conv net" should "build from basic layers and compute output vectors correctly" in {
 
     new TestData {
@@ -216,52 +173,13 @@ class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools{
   }
 
 
-  "A dense net" should "compute backprop dC/dx correctly" in {
-
-    new TestData {
-
-      val denseNet: Layer = Flatten(3, 2, 2) |:| dense |:| output
-
-      val input: INDArray = expected_pool_result
-      val y_bar: INDArray = vec(30, -31)
-
-      val (from_backprop,_,_) = denseNet.fwbw(input, y_bar)
-      val numerical: INDArray = df_dx(cost(denseNet, y_bar))(input)
-
-      from_backprop shouldEqual numerical
-    }
-  }
-
-
-  "A pool net" should "compute backprop dC/dx correctly" in {
-
-    new TestData {
-
-      val poolnet: Layer = pool |:| dense |:| output
-
-      val input: INDArray = expected_conv_result
-      val y_bar: INDArray = vec(30, -32)
-
-      val (from_backprop,_,_) = poolnet.fwbw(input, y_bar)
-      val numerical: INDArray = df_dx(cost(poolnet, y_bar))(input)
-
-      from_backprop shouldEqual numerical
-    }
-  }
-
-
   "A conv net" should "compute backprop dC/dx correctly" in {
-
     new TestData {
       val convnet: Layer = conv |:| pool |:| dense |:| output
-
       val y_bar: INDArray = vec(30, -32)
 
-      val ( from_backprop,_,_) = convnet.fwbw(x, y_bar)
-      val numerical: INDArray = df_dx(cost(convnet, y_bar))(x)
-
-      from_backprop shouldEqual numerical
-
+      validateBackProp(convnet, x, y_bar)
     }
   }
+
 }

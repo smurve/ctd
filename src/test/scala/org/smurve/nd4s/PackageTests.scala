@@ -9,7 +9,7 @@ class PackageTests extends FlatSpec with ShouldMatchers {
 
   val seed = 123
 
-  "shuffle" should "shuffle" in {
+  "shuffle" should "shuffle - obviously." in {
 
     val orig1 = (1 to 12).asNDArray(4,3)
     val orig2 = (13 to 24).asNDArray(4,3)

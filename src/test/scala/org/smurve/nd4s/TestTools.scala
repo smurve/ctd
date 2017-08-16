@@ -4,8 +4,9 @@ import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.scalactic.Equality
 import org.nd4s.Implicits._
+import org.scalatest.ShouldMatchers
 
-trait TestTools {
+trait TestTools extends ShouldMatchers {
 
   case class Precision(epsilon: Double)
 
@@ -53,6 +54,19 @@ trait TestTools {
       res(i) = (f(x + epsvec(i)) - f(x - epsvec(i))) / 2 / precision.epsilon
     }
     res.reshape(x.shape: _*)
+  }
+
+  /**
+    * Compare numerical and analytical computations of dC/dx
+    * @param net the network to be tested
+    * @param input the input vector
+    * @param y_bar the expected output
+    */
+  def validateBackProp ( net: Layer, input: INDArray, y_bar: INDArray): Unit = {
+    val ( from_backprop,_,_) = net.fwbw(input, y_bar)
+    val numerical: INDArray = df_dx(cost(net, y_bar))(input)
+
+    from_backprop shouldEqual numerical
   }
 
 

@@ -8,7 +8,7 @@ import org.nd4s.Implicits._
   * @param height_stride the vertical stride size
   * @param width_stride the horizontal stride size
   */
-case class AvgPooling (depth_stride: Int, height_stride: Int, width_stride: Int) extends Layer {
+case class AvgPool(depth_stride: Int, height_stride: Int, width_stride: Int) extends Layer {
 
   val N_values: Int = depth_stride * height_stride * width_stride
 
