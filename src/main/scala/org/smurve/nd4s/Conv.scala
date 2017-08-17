@@ -62,9 +62,6 @@ case class Conv(theta: INDArray, depth_input: Int, height_input: Int, width_inpu
             val xdrc = x(id, ir, ic)
             val tdrc = theta(td_od(od), tr, tc)
             val elem = xdrc * tdrc
-            if ( (od, or, oc) == (0,10,14) ) {
-              elem
-            }
             elem
           }
         elems.sum + theta(td_od(od), 0, 0)

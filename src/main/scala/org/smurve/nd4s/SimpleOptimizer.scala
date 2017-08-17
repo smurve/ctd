@@ -76,10 +76,14 @@ class SimpleOptimizer(val generator: () => Affine,
           * Here, we parallelize by mapping each batch to blocks and reducing (summing the gradients) afterwards
           */
         val blocks = (0 until nBlocks).par
+
         val (g_total, c_total): (Seq[INDArray], Double) = blocks.map(block => {
+
             val (sample_block, label_block) = sliceBlock(blockSize, offset, block, samples, labels)
+
             val (_, grads, c) = model.fwbw(sample_block, label_block)
             (grads, c)
+
           }).reduce(sum)
 
         model.update(g_total.map(_ * -eta))
