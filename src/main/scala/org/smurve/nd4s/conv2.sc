@@ -8,32 +8,44 @@ val theta2 = Nd4j.rand(Array(10, 3, 3)) -0.5
 
 val conv1 = Conv(theta1, 1, 28, 28)
 
-// INDArrays are row vectors
-val v = vec(1,2,3, 4)
-val v2 = v ** v.T
+val input: INDArray = vec(
+  -2, -2, -2, -2,
+  -2, -2, -2, -2,
+  -2, -2, -2, -2,
+  -2, -2, -2, -2,
 
-val v1 = vec(1,2,3,4)
+  2, 2, 2, 2,
+  2, 2, 2, 2,
+  2, 2, 2, 2,
+  2, 2, 2, 2,
 
-v1 == v
-v1 == v.T
-v1 == v.reshape(2,2)
+  4, 4, 4, 4,
+  4, 4, 4, 4,
+  4, 4, 4, 4,
+  4, 4, 4, 4,
 
-def f(x: Double) = x * x * x
+  4, 4, 4, 4,
+  4, 4, 4, 4,
+  4, 4, 4, 4,
+  4, 4, 4, 4,
 
-val epsilon = 1e-3
+  1, 2, 3, 4,
+  2, 3, 4, 5,
+  3, 4, 5, 6,
+  4, 5, 6, 7,
 
-(f(3+epsilon) - f(3-epsilon)) / 2 / epsilon
+  4, 5, 6, 7,
+  3, 4, 5, 6,
+  2, 3, 4, 5,
+  1, 2, 3, 4
+).reshape(3, 2, 4, 4)
 
-val theta = vec (
-  1,2,2,3,
-  1,-1,1,1,
-  2,2,1,1).reshape(4,3)
-
-val x=vec(3,2,1,3,2,1).reshape(3,2)
-
-def f(x: INDArray ) = theta ** x
-
-f(x)(0,0)
+val(od, or, oc) = (2, 0, 0)
+val slice = input(od, 0 -> 2, 2 * or-> 2* (or+1), oc*2 -> 2* (oc+1))
+val max1 = slice.max(0,1,2)
 
 
-theta.length()
+
+
+
+

@@ -3,117 +3,84 @@ import org.nd4j.linalg.factory.Nd4j
 import org.smurve.nd4s._
 import org.nd4s.Implicits._
 
-val img = vec(
-  0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-  0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 1, 1, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-  0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-  1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-  1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-  0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-  1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
+val m = vec(
+  1, 2, 3, 4,
+  2, 3, 4, 5,
+  4, 3, 2, 1,
+  7, 6, 5, 4,
 
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-).reshape(2, 14, 14)
-
-val theta = vec(
-  3, 0, 0, 0, 0,
-  1, 1, 1, 1, 1,
-  1, 2, 2, 2, 1,
-  1, 2, 2, 2, 1,
-  1, 2, 2, 2, 1,
-  1, 1, 1, 1, 1,
-
-  3, 0, 0, 0, 0,
-  1, 1, 1, 1, 1,
-  1, 0, 0, 0, 1,
-  1, 0, 1, 0, 1,
-  1, 0, 0, 0, 1,
-  1, 1, 1, 1, 1,
-
-  3, 0, 0, 0, 0,
-  0, 0, 0, 0, 0,
-  0, -1, -1, -1, 0,
-  0, 1, 1, 1, 0,
-  0, -1, -1, -1, 0,
-  0, 0, 0, 0, 0
-).reshape(3, 6, 5)
-
-val out = Nd4j.zeros(6, 10, 10)
-
-val (depth_o, height_o, width_o) = (6, 10, 10)
-val (depth_i, height_i, width_i) = (2, 14, 14)
-val (depth_t, height_t, width_t) = (3, 6, 5)
+  2, 3, 4, 5,
+  1, 2, 3, 4,
+  7, 6, 5, -1,
+  4, 3, 2, 4,
 
 
-val indices =
-  (0 until 3)
-  .flatMap(i => (3 until 6).map(j=>(i,j)))
-    .flatMap(p=>(7 until 10).map(k=>(p._1, p._2, k)))
+  5, 2, 8, 4,
+  2, 3, 4, 5,
+  6, 3, 7, 1,
+  7, 6, 5, 4,
 
-val sums = for ( (i,j,k) <- indices ) yield  i + j + k
+  4, 3, 1, 5,
+  1, 2, 3, 4,
+  3, 6, 2, 4,
+  4, 3, 2, 0
 
-def id_od(od: Int) = od / depth_t
-def td_od(od: Int) = od % depth_t
-def ir_or_tr(or: Int, tr: Int) = or + tr - 1
-def ic_oc_tc(oc: Int, tc: Int) = oc + tc
-def idrc(or: Int, od: Int, oc: Int, tr: Int, tc: Int) = (id_od(od), ir_or_tr(or, tr), ic_oc_tc(oc, tc))
+).reshape(2, 2, 4, 4)
+
+val height_stride = 2
+val width_stride = 2
+val depth_stride = 2
+
+m.length
+m.ravel.length
 
 
-def convolve(): Unit =
-  for (od <- 0 until depth_o)
-    for (or <- 0 until height_o)
-      for (oc <- 0 until width_o) {
-        out(od, or, oc) = {
-          val elems =
-            for {tr <- 1 until height_t
-                 tc <- 0 until width_t
-            } yield {
-              val (id, ir, ic) = idrc(or, od, oc, tr, tc)
-              img(id, ir, ic) * theta(td_od(od), tr, tc)
-            }
-          elems.sum + theta(td_od(od), 0, 0)
-        }
-      }
+type IArr = Array[Array[Int]]
 
-convolve()
+def _outer ( l: IArr, r: IArr ) : IArr = l.flatMap(i=>r.map(i ++ _))
 
-val out1 = out.reshape(3,2,10,10)
+def _iArr(ranges: Range*): IArr = {
+  ranges.map(r=>r.toArray.map(Array(_))).toArray.reduce( _outer )
+}
 
-val res = out1(1, 1, ->, ->)
+def _asString(arr: IArr): String = arr.toList.map(_.toList).toString
+  .replace("List", "").replace("(","[").replace(")", "]")
+
+
+def _reduceWithIndex(source: INDArray, mi: IArr, op: (Double, Double) => Boolean): (Double, Array[Int]) = {
+  mi.map(i=>(source(i(0), i(1), i(2), i(3)), i))
+    .reduce((a,e)=>if(op(a._1, e._1)) a else e)
+}
+
+def _minWithIndex(source: INDArray, mi: IArr): (Double, Array[Int]) = _reduceWithIndex( source, mi, _<_)
+def _maxWithIndex(source: INDArray, mi: IArr): (Double, Array[Int]) = _reduceWithIndex( source, mi, _>_)
 
 
 
 
+def domainOf(od: Int, or: Int, oc: Int): IArr =
+  _iArr(
+    od until od+1,
+    0 until depth_stride,
+    height_stride * or until height_stride * (or + 1),
+    width_stride * oc until width_stride * (oc + 1))
 
 
 
+val r02 = _iArr(0 until 2, 1 until 3, 1 until 3)
+_asString(r02)
+
+for (Array(i,j,k)<-r02) yield (i,j,k)
+
+val (od, or, oc) = (0, 1, 1)
+
+val domain = domainOf(od, or, oc)
+_asString(domain)
 
 
 
-
-
-
-
+val min = _minWithIndex(m, domain)
+min._2.toList
 
 
 

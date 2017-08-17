@@ -14,21 +14,29 @@ trait TestTools extends ShouldMatchers {
   implicit val PRECISION: Precision = Precision(1e-2)
 
   implicit val doubleEq: Equality[Double] = new Equality[Double] {
-    override def areEqual(a: Double, b: Any): Boolean = math.abs(a - b.asInstanceOf[Double]) < PRECISION.epsilon
+    override def areEqual(a: Double, b: Any): Boolean =
+      math.abs(a - b.asInstanceOf[Double]) /
+        (math.abs(a + b.asInstanceOf[Double]) + PRECISION.epsilon) < PRECISION.epsilon
   }
 
   /**
     * INDArray equality to a certain precision
     */
   implicit val nd4jEq: Equality[INDArray] = new Equality[INDArray] {
-    override def areEqual(a: INDArray, b: Any): Boolean =
-      a - b.asInstanceOf[INDArray] < PRECISION.epsilon && a - b.asInstanceOf[INDArray] > -PRECISION.epsilon
+    override def areEqual(a: INDArray, b: Any): Boolean = {
+      val r = b.asInstanceOf[INDArray].ravel
+      val l = a.ravel
+      require(l.shape sameElements r.shape, "Need to have the same shape to meaningfully compare.")
+      (0 until l.length).forall(i => doubleEq.areEqual(l(i), r(i)))
+    }
   }
+
 
   /**
     * the cost function
+    *
     * @param network the network to use
-    * @param y_bar the expected output
+    * @param y_bar   the expected output
     * @return the cost at the given input
     */
   def cost(network: Layer, y_bar: INDArray): INDArray => Double = network.fwbw(_, y_bar)._3
@@ -43,6 +51,7 @@ trait TestTools extends ShouldMatchers {
     */
   def df_dx(f: (INDArray) => Double)(x: INDArray)(implicit precision: Precision): INDArray = {
     val l = x.length
+
     def epsvec(k: Int) = {
       val res = Nd4j.zeros(l)
       res(k) = precision.epsilon
@@ -58,12 +67,13 @@ trait TestTools extends ShouldMatchers {
 
   /**
     * Compare numerical and analytical computations of dC/dx
-    * @param net the network to be tested
+    *
+    * @param net   the network to be tested
     * @param input the input vector
     * @param y_bar the expected output
     */
-  def validateBackProp ( net: Layer, input: INDArray, y_bar: INDArray): Unit = {
-    val ( from_backprop,_,_) = net.fwbw(input, y_bar)
+  def validateBackProp(net: Layer, input: INDArray, y_bar: INDArray): Unit = {
+    val (from_backprop, _, _) = net.fwbw(input, y_bar)
     val numerical: INDArray = df_dx(cost(net, y_bar))(input)
 
     from_backprop shouldEqual numerical

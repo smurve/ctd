@@ -3,7 +3,7 @@ package org.smurve
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4s.Implicits._
-import org.smurve.transform.{Affine, Grid, Rotate}
+import org.smurve.transform.{Affine, Grid}
 
 import scala.collection.mutable
 import scala.util.Random
@@ -166,6 +166,44 @@ package object nd4s {
     val res = max == classification.getDouble(lbl_icx)
     res
   }
+
+
+  /**
+    * Index Arrays for convenient access to INDArray tensors
+    */
+  type IArr = Array[Array[Int]]
+
+  /**
+    * @return the "outer product": the Array containing all combinations
+    */
+  def outer ( l: IArr, r: IArr ) : IArr = l.flatMap(i=>r.map(i ++ _))
+
+  /**
+    * @return an index array from ranges
+    */
+  def iArr(ranges: Range*): IArr = {
+    ranges.map(r=>r.toArray.map(Array(_))).toArray.reduce( outer )
+  }
+
+  /**
+    * @return all indices of a given INDArray
+    */
+  def iArr(v: INDArray): IArr = iArr(v.shape().map(0 until _): _*)
+
+  /**
+    * convenience method for displaying index arrays
+    */
+  def asString(arr: IArr): String = arr.toList.map(_.toList).toString
+    .replace("List", "").replace("(","[").replace(")", "]")
+
+
+  def reduceByElimination(source: INDArray, mi: IArr, discriminator: (Double, Double) => Boolean): (Double, Array[Int]) = {
+    mi.map(i=>(source(i:_*), i))
+      .reduce((a,e)=>if(discriminator(a._1, e._1)) a else e)
+  }
+
+  def minWithIndex(source: INDArray, mi: IArr): (Double, Array[Int]) = reduceByElimination( source, mi, _<_)
+  def maxWithIndex(source: INDArray, mi: IArr): (Double, Array[Int]) = reduceByElimination( source, mi, _>_)
 
 
   /**
