@@ -4,7 +4,7 @@ import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4s.Implicits._
 import org.smurve.transform.Grid
 
-object ConvolutionDemo {
+object SimpleConvolutionDemo {
 
   val img: INDArray = vec(
     0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
@@ -68,12 +68,14 @@ object ConvolutionDemo {
     */
   def main(args: Array[String]): Unit = {
 
-    val conv = Conv(theta, 2, 14, 14)
+    val conv = Conv(theta, 2, 14, 14, 5)
 
     val out = conv.fun(img)
 
-    for ( i <- 0 until 6 ) {
-      println(new Grid(out(i, ->)))
+    for { i <- 0 until 3
+          j <- 0 until 2
+    } {
+      println(new Grid(out(i, j, ->, ->)))
       println()
     }
   }

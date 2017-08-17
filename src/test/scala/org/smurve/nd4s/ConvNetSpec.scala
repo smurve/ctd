@@ -97,7 +97,7 @@ class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools{
       1, -1
     ).reshape(13, 2)
 
-    val conv = Conv(theta1, depth_input = 2, height_input = 5, width_input = 5)
+    val conv = Conv(theta1, depth_input = 2, height_input = 5, width_input = 5, height_theta = 2)
     val pool: Layer = (
       AvgPool(depth_stride = 2, height_stride = 2, width_stride = 2)
         |:| Flatten(3, 2, 2)).asInstanceOf[AvgPool]

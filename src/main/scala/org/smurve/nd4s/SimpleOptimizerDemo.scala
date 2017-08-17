@@ -20,8 +20,8 @@ object SimpleOptimizerDemo  {
     val (x1c, x2c) = (3, 3)
     val N_train = 20000
     val N_test = 1000
-    val N_EPOCHS = 20
-    val reportEvery = 20
+    val N_EPOCHS = 5
+    val reportEvery = 100
     val eta: Double = 3e-3
     val nbatches = 100
     val parallel = false

@@ -150,7 +150,10 @@ class Grid(val field: INDArray, val useRegression: Boolean = false) {
   }
 
   def scaleToByte(x: Double): Byte = {
-    (255 * (min + (x - min)/(max - min))).toByte
+    if ( x < 0 ) 0 else {
+      val min0 = math.max(0, min)
+      (255 * (x - min0) / (max - min0)).toByte
+    }
   }
 
   override def toString: String = {

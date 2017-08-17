@@ -7,13 +7,14 @@ import org.smurve.mnist.config.MyHDFSConfig
 /**
   * Created by wgiersche on 22/07/17.
   */
-object MNISTClusterRunner extends MNistRunner ( new MyHDFSConfig ) {
+object MNISTClusterRunner extends MNistRunner  {
 
-  private val cfg = new SparkConf().set("spark.cores.max", "8")
+  protected val config = new MyHDFSConfig
+  private val sparkConfig = new SparkConf().set("spark.cores.max", "8")
 
   override protected val session: SparkSession = SparkSession.builder().
     master("spark://daphnis:5050").
-    config(cfg).
+    config(sparkConfig).
     appName("MNIST").
     getOrCreate()
 

@@ -15,16 +15,17 @@ import scala.language.postfixOps
   * @param height_input the number of rows of the input vector
   * @param width_input  the number of columns of the input vector
   */
-case class Conv(theta: INDArray, depth_input: Int, height_input: Int, width_input: Int) extends Layer {
+case class Conv(theta: INDArray, depth_input: Int, height_input: Int, width_input: Int,
+                height_theta: Int) extends Layer {
 
   require(theta.rank == 3, "Expecting weight tensor of rank 3")
+  require(theta.size(1)-1 == height_theta, "Theta LRFs need an additional row for the bias. Did you supply?")
 
   val depth_theta: Int = theta.size(0)
-  val height_theta: Int = theta.size(1)
   val width_theta: Int = theta.size(2)
 
   val depth_output: Int = depth_input * depth_theta
-  val height_output: Int = height_input - (height_theta - 1) + 1 // theta has an additional row for the bias
+  val height_output: Int = height_input - height_theta + 1 // theta has an additional row for the bias
   val width_output: Int = width_input - width_theta + 1
 
   /**
@@ -54,11 +55,17 @@ case class Conv(theta: INDArray, depth_input: Int, height_input: Int, width_inpu
       output(od, or, oc) = {
         /* this iterates over the weights (local receptive field) */
         val elems =
-          for {tr <- 1 until height_theta
+          for {tr <- 1 until height_theta + 1
                tc <- 0 until width_theta
           } yield {
             val (id, ir, ic) = idrc(or, od, oc, tr, tc)
-            x(id, ir, ic) * theta(td_od(od), tr, tc)
+            val xdrc = x(id, ir, ic)
+            val tdrc = theta(td_od(od), tr, tc)
+            val elem = xdrc * tdrc
+            if ( (od, or, oc) == (0,10,14) ) {
+              elem
+            }
+            elem
           }
         elems.sum + theta(td_od(od), 0, 0)
       }
@@ -71,7 +78,7 @@ case class Conv(theta: INDArray, depth_input: Int, height_input: Int, width_inpu
     */
   def dy_dx(od: Int, or: Int, oc: Int, id: Int, ir: Int, ic: Int): Double = {
 
-    (for {tr <- 1 until height_theta
+    (for {tr <- 1 until height_theta + 1
           tc <- 0 until width_theta
           td = td_od(od)
     } yield
