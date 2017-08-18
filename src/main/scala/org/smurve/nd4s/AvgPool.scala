@@ -20,22 +20,23 @@ case class AvgPool(depth_stride: Int, height_stride: Int, width_stride: Int) ext
     * @return the function applied to the input vector
     */
   override def fun(x: INDArray): INDArray = {
-    require(x.rank == 4, "Need to be rank 4: N_features x D x H x W")
-    require ( x.size(2) % height_stride == 0, "stride height doesn't divide input height.")
-    require ( x.size(3) % width_stride == 0, "stride width doesn't divide input width.")
+    require(x.rank == 5, "Need to be rank 4: N_inp x N_features x D x H x W")
+    require ( x.size(3) % height_stride == 0, "stride height doesn't divide input height.")
+    require ( x.size(4) % width_stride == 0, "stride width doesn't divide input width.")
 
-    val res = Nd4j.zeros(x.size(0), x.size(2) / height_stride, x.size(3) / width_stride)
+    val res = Nd4j.zeros(x.size(0), x.size(1), x.size(3) / height_stride, x.size(4) / width_stride)
 
     for {
-      n <- 0 until x.size(0)
-      ir <- 0 until x.size(2) by height_stride
-      ic <- 0 until x.size(3) by width_stride
+      ni <- 0 until x.size(0)
+      nf <- 0 until x.size(1)
+      ir <- 0 until x.size(3) by height_stride
+      ic <- 0 until x.size(4) by width_stride
     }
-        res(n, ir/height_stride, ic/width_stride) = (for {
+        res(ni, nf, ir/height_stride, ic/width_stride) = (for {
           d <- 0 until depth_stride
           r <- ir until ir + height_stride
           c <- ic until ic + width_stride
-        } yield x(n, d,r,c)).sum / N_values
+        } yield x(ni, nf, d,r,c)).sum / N_values
     res
   }
 
@@ -50,16 +51,17 @@ case class AvgPool(depth_stride: Int, height_stride: Int, width_stride: Int) ext
     val dC_dx = Nd4j.zeros(x.shape: _*)
 
     for {
-      od <- 0 until dC_dy.size(0)
-      or <- 0 until dC_dy.size(1)
-      oc <- 0 until dC_dy.size(2)
+      n <- 0 until dC_dy.size(0)
+      od <- 0 until dC_dy.size(1)
+      or <- 0 until dC_dy.size(2)
+      oc <- 0 until dC_dy.size(3)
 
       d <- 0 until depth_stride
       r <- or * height_stride until (or + 1) * height_stride
       c <- oc * width_stride until (oc + 1) * width_stride
 
       // chain rule again: 1/N = dy/dx
-      } dC_dx(od, d, r, c) = dC_dy(od, or, oc) / N_values
+      } dC_dx(n, od, d, r, c) = dC_dy(n, od, or, oc) / N_values
 
     (dC_dx, grads, c)
   }

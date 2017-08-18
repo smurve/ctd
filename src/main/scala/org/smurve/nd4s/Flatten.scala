@@ -12,7 +12,7 @@ case class Flatten(input_depth: Int, input_height: Int, input_width: Int ) exten
     * @param x the input vector
     * @return the function applied to the input vector
     */
-  override def fun(x: INDArray): INDArray = x.ravel
+  override def fun(x: INDArray): INDArray = x.reshape(x.size(0), x.length / x.size(0))
 
   /**
     * forward pass and back propagation in one method call
@@ -22,7 +22,8 @@ case class Flatten(input_depth: Int, input_height: Int, input_width: Int ) exten
     */
   override def fwbw(x: INDArray, y_bar: INDArray): (INDArray, List[INDArray], Double) = {
     val (dC_dx, grads, c) = nextLayer.fwbw(fun(x), y_bar)
-    (dC_dx.reshape(input_depth, input_height, input_width), grads, c)
+    val n = dC_dx.length / (input_depth * input_height * input_width)
+    (dC_dx.reshape(n, input_depth, input_height, input_width), grads, c)
   }
 
   /**

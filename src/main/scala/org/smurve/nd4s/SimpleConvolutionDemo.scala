@@ -36,7 +36,7 @@ object SimpleConvolutionDemo {
     0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-  ).reshape(2, 14, 14)
+  ).reshape(1, 2, 14, 14)
 
   val theta: INDArray = vec(
     3, 0, 0, 0, 0,
@@ -75,7 +75,7 @@ object SimpleConvolutionDemo {
     for { i <- 0 until 3
           j <- 0 until 2
     } {
-      println(new Grid(out(i, j, ->, ->)))
+      println(new Grid(out(0, i, j, ->, ->)))
       println()
     }
   }

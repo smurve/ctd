@@ -17,8 +17,9 @@ case class MaxPool(depth_stride: Int, height_stride: Int, width_stride: Int) ext
   /**
     * @return the indices that constitue the source of the output at (od, or, oc)
     */
-  def domainOf(od: Int, or: Int, oc: Int): IArr =
+  def domainOf(n: Int, od: Int, or: Int, oc: Int): IArr =
     iArr(
+      n until n + 1,
       od until od + 1,
       0 until depth_stride,
       height_stride * or until height_stride * (or + 1),
@@ -29,20 +30,21 @@ case class MaxPool(depth_stride: Int, height_stride: Int, width_stride: Int) ext
     * @return the pooling function values and partial derivatives in one go.
     */
   def fun2(x: INDArray): (INDArray, INDArray) = {
-    require(x.rank == 4, "Need to be rank 4: N_features x D x H x W")
-    require(x.size(2) % height_stride == 0, "stride height doesn't divide input height.")
-    require(x.size(3) % width_stride == 0, "stride width doesn't divide input width.")
+    require(x.rank == 5, "Need to be rank 4: N_features x D x H x W")
+    require(x.size(3) % height_stride == 0, "stride height doesn't divide input height.")
+    require(x.size(4) % width_stride == 0, "stride width doesn't divide input width.")
+    val N_inp = x.size(0)
 
-    val res = Nd4j.zeros(x.size(0), x.size(2) / height_stride, x.size(3) / width_stride)
+    val res = Nd4j.zeros(N_inp, x.size(1), x.size(3) / height_stride, x.size(4) / width_stride)
     val dy_dx = Nd4j.zeros(x.shape: _*)
 
-    for (Array(od, or, oc) <- iArr(res)) {
-
+    for (Array(n, od, or, oc) <- iArr(res)){
       // look for max at those indices contributing to output at (od, or, oc)
-      val max = maxWithIndex(x, domainOf(od, or, oc))
-      res(od, or, oc) = max._1
+      val domain = domainOf(n, od, or, oc)
+      val max = maxWithIndex(x, domain)
+      res(n, od, or, oc) = max._1
       val i = max._2
-      dy_dx(i(0), i(1), i(2), i(3)) = 1
+      dy_dx(i(0), i(1), i(2), i(3), i(4)) = 1
     }
 
     (res, dy_dx)
@@ -59,15 +61,15 @@ case class MaxPool(depth_stride: Int, height_stride: Int, width_stride: Int) ext
     */
   override def fwbw(x: INDArray, y_bar: INDArray): (INDArray, List[INDArray], Double) = {
 
-    val (f, ind) = fun2(x)
+    val (f, dy_dx) = fun2(x)
     val (dC_dy, grads, c) = nextLayer.fwbw(f, y_bar)
     val dC_dx = Nd4j.zeros(x.shape: _*)
 
     for {
-      Array(od, or, oc) <- iArr(dC_dy)
-      Array(id, d, ir, ic) <- domainOf(od, or, oc)
+      Array(n, od, or, oc) <- iArr(dC_dy)
+      Array(n, id, d, ir, ic) <- domainOf(n, od, or, oc)
     }
-      dC_dx(id, d, ir, ic) = ind(id, d, ir, ic) * dC_dy(od, or, oc)
+      dC_dx(n, id, d, ir, ic) = dy_dx(n, id, d, ir, ic) * dC_dy(n, od, or, oc)
 
 
     (dC_dx, grads, c)

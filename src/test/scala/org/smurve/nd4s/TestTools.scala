@@ -79,5 +79,43 @@ trait TestTools extends ShouldMatchers {
     from_backprop shouldEqual numerical
   }
 
+  /**
+    * check symmetries hold for backpropagation
+    */
+  def checkSymmetries(net: Layer,  x: INDArray, y_bar: INDArray): Unit = {
+    require(x.size(0) > 1, "Can't check symmetries with less than two input vectors")
+
+    check_dC_dy_symmetries(net, x, y_bar)
+  }
+
+
+  def check_dC_dy_symmetries(net: Layer,  x: INDArray, y_bar: INDArray): Unit = {
+    val (dC_dy, _, _) = net.fwbw(x, y_bar)
+    val (dC_dy_0, _, _) = net.fwbw(sliceR(x, 0), sliceR(y_bar, 0))
+    val (dC_dy_1, _, _) = net.fwbw(sliceR(x, 1), sliceR(y_bar, 1))
+    for (i<-iArr(dC_dy_0)) {
+      dC_dy_0(i:_*) shouldEqual dC_dy(i:_*)
+      val i1 = i.clone()
+      i1(0) = 1
+      dC_dy_1(i:_*) shouldEqual dC_dy(i1:_*)
+    }
+  }
+
+  /**
+    * slice maintaining the rank
+    * @param v the input vectors
+    * @param i the index of the vector to be sliced out
+    * @return a tensor of the same rank containing only the vector with given index
+    */
+  def sliceR ( v: INDArray, i: Int): INDArray = {
+    def newShape( sub: Int*): Array[Int] = (1 +: sub).toArray
+    val res = v.slice(i, 0)
+    if (v.rank == 2)
+      res
+    else {
+      val ns = newShape(res.shape(): _*)
+      res.reshape(ns: _*)
+    }
+  }
 
 }

@@ -38,7 +38,7 @@ class MaxPoolingSpec extends FlatSpec with ShouldMatchers with TestTools{
       3, 311, 8, 6,
       2, 2, 9, 5,
       8, 321, 3, 1
-    ).reshape(3, 2, 4, 4)
+    ).reshape(1, 3, 2, 4, 4)
 
     val expected_pool_result: INDArray = vec(
       111, 112,
@@ -49,7 +49,7 @@ class MaxPoolingSpec extends FlatSpec with ShouldMatchers with TestTools{
 
       311, 312,
       321, 322
-    ).reshape(3, 2, 2)
+    ).reshape(1, 3, 2, 2)
 
     val theta2: INDArray = vec(
       0, 0,
@@ -76,7 +76,7 @@ class MaxPoolingSpec extends FlatSpec with ShouldMatchers with TestTools{
 
 
 
-  "A max pool" should "produce the correctly computed rank 3 tensor" in {
+  "A max pool" should "produce the correctly computed rank 4 tensor" in {
     new TestData {
       val y: INDArray = pool.fun(input)
       y shouldEqual expected_pool_result
@@ -102,5 +102,12 @@ class MaxPoolingSpec extends FlatSpec with ShouldMatchers with TestTools{
     }
   }
 
+  it should "exhibit certain symmetries" in {
+    new TestData {
+      val poolnet: Layer = pool |:| dense |:| output
+      val y_bar: INDArray = vec(2598, -2596, 2598, -2596).reshape(2,2)
+      checkSymmetries(poolnet, Nd4j.vstack(input, input), y_bar)
+    }
+  }
 
 }

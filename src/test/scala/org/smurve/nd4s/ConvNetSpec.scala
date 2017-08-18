@@ -1,10 +1,11 @@
 package org.smurve.nd4s
 
 import org.nd4j.linalg.api.ndarray.INDArray
+import org.nd4j.linalg.factory.Nd4j
 import org.nd4s.Implicits._
 import org.scalatest.{FlatSpec, ShouldMatchers}
 
-class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools{
+class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools {
 
   trait TestData {
     val x: INDArray = vec(
@@ -19,7 +20,7 @@ class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools{
       2, 3, 4, 5, 6,
       1, 2, 3, 4, 5,
       0, 1, 2, 3, 4
-    ).reshape(2, 5, 5)
+    ).reshape(1, 2, 5, 5)
 
     val theta1: INDArray = vec(
       0, 0,
@@ -65,7 +66,7 @@ class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools{
       3, 4, 5, 6,
       2, 3, 4, 5,
       1, 2, 3, 4
-    ).reshape(3, 2, 4, 4)
+    ).reshape(1, 3, 2, 4, 4)
 
     // happens to have the same shape, of course
     val fake_dC_dy: INDArray = expected_conv_result
@@ -79,7 +80,7 @@ class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools{
 
       3, 5,
       3, 5
-    ).reshape(3, 2, 2)
+    ).reshape(1, 3, 2, 2)
 
     val theta2: INDArray = vec(
       0, 0,
@@ -145,12 +146,12 @@ class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools{
   "A conv layer" should "compute dy/dtheta as the x values involved to produce y from theta" in {
 
     new TestData {
-      conv.dy_dTheta(5, 3, 2, 1, 2, 0, x) shouldEqual 0.0
+      conv.dy_dTheta(0, 5, 3, 2, 1, 2, 0, x) shouldEqual 0.0
 
-      conv.dy_dTheta(5, 3, 2, 2, 1, 0, x) shouldEqual x(1, 3, 2)
-      conv.dy_dTheta(5, 3, 2, 2, 1, 1, x) shouldEqual x(1, 3, 3)
-      conv.dy_dTheta(5, 3, 2, 2, 2, 0, x) shouldEqual x(1, 4, 2)
-      conv.dy_dTheta(5, 3, 2, 2, 2, 1, x) shouldEqual x(1, 4, 3)
+      conv.dy_dTheta(0, 5, 3, 2, 2, 1, 0, x) shouldEqual x(0, 1, 3, 2)
+      conv.dy_dTheta(0, 5, 3, 2, 2, 1, 1, x) shouldEqual x(0, 1, 3, 3)
+      conv.dy_dTheta(0, 5, 3, 2, 2, 2, 0, x) shouldEqual x(0, 1, 4, 2)
+      conv.dy_dTheta(0, 5, 3, 2, 2, 2, 1, x) shouldEqual x(0, 1, 4, 3)
     }
   }
 
@@ -176,10 +177,19 @@ class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools{
   "A conv net" should "compute backprop dC/dx correctly" in {
     new TestData {
       val convnet: Layer = conv |:| pool |:| dense |:| output
-      val y_bar: INDArray = vec(30, -32)
+      val y_bar: INDArray = vec(30, -32).reshape(1, 2)
 
       validateBackProp(convnet, x, y_bar)
     }
   }
 
+  it should "exhibit certain symmetries." in {
+    new TestData {
+      val convnet: Layer = conv |:| pool |:| dense |:| output
+      val x2: INDArray = Nd4j.vstack(x,x)
+
+      val y_bar2: INDArray = vec(30, -32, 31, -31).reshape(2, 2)
+      checkSymmetries(conv, x2, y_bar2)
+    }
+  }
 }

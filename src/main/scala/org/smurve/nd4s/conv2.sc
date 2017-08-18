@@ -6,7 +6,6 @@ import org.nd4s.Implicits._
 val theta1 = Nd4j.rand(Array(10,3,3))-.5
 val theta2 = Nd4j.rand(Array(10, 3, 3)) -0.5
 
-val conv1 = Conv(theta1, 1, 28, 28)
 
 val input: INDArray = vec(
   -2, -2, -2, -2,
@@ -40,12 +39,8 @@ val input: INDArray = vec(
   1, 2, 3, 4
 ).reshape(3, 2, 4, 4)
 
-val(od, or, oc) = (2, 0, 0)
-val slice = input(od, 0 -> 2, 2 * or-> 2* (or+1), oc*2 -> 2* (oc+1))
-val max1 = slice.max(0,1,2)
+input.reshape(3,32)
 
-
-
-
-
+input.shape
+input.slice(0,0).shape
 

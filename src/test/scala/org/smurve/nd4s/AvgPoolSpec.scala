@@ -38,7 +38,7 @@ class AvgPoolSpec extends FlatSpec with ShouldMatchers with TestTools{
       3, 4, 5, 6,
       2, 3, 4, 5,
       1, 2, 3, 4
-    ).reshape(3, 2, 4, 4)
+    ).reshape(1, 3, 2, 4, 4)
 
     val expected_pool_result: INDArray = vec(
       0, 0,
@@ -49,7 +49,7 @@ class AvgPoolSpec extends FlatSpec with ShouldMatchers with TestTools{
 
       3, 5,
       3, 5
-    ).reshape(3, 2, 2)
+    ).reshape(1, 3, 2, 2)
 
     val theta2: INDArray = vec(
       0, 0,
@@ -93,12 +93,12 @@ class AvgPoolSpec extends FlatSpec with ShouldMatchers with TestTools{
   "An avg pool" should "calculate the correct partial derivatives" in {
     new TestData {
       val poolNet: Layer = pool |:| output
-      val zeroMap: INDArray = Nd4j.zeros(4, 4)
+      val zeroMap: INDArray = Nd4j.zeros(1, 4, 4)
       val someDeriv: INDArray = vec(
         .25, .25, 0, 0,
         .25, .25, 0, 0,
         0, 0, 0, 0,
-        0, 0, 0, 0).reshape(4, 4)
+        0, 0, 0, 0).reshape(1, 4, 4)
       val y_bar: INDArray = expected_pool_result.ravel
       val propd: (INDArray, List[INDArray], Double) = poolNet.fwbw(input, y_bar)
       propd._1.sum(Array(0, 1, 2, 3): _*)(0) shouldEqual 0.0 // we're at the global minimum
@@ -106,12 +106,12 @@ class AvgPoolSpec extends FlatSpec with ShouldMatchers with TestTools{
       y_bar(4) = 2 // gives us dC/dy = (0,0,0,0,2,0,0,0,0,0,0,0) from the output layer
       val propd1: (INDArray, List[INDArray], Double) = poolNet.fwbw(input, y_bar)
       val dC_dx: INDArray = propd1._1
-      dC_dx(0, 0, ->, ->) shouldEqual zeroMap
-      dC_dx(0, 1, ->, ->) shouldEqual zeroMap
-      dC_dx(1, 0, ->, ->) shouldEqual someDeriv
-      dC_dx(1, 1, ->, ->) shouldEqual someDeriv
-      dC_dx(2, 0, ->, ->) shouldEqual zeroMap
-      dC_dx(2, 1, ->, ->) shouldEqual zeroMap
+      dC_dx(0, 0, 0, ->, ->) shouldEqual zeroMap
+      dC_dx(0, 0, 1, ->, ->) shouldEqual zeroMap
+      dC_dx(0, 1, 0, ->, ->) shouldEqual someDeriv
+      dC_dx(0, 1, 1, ->, ->) shouldEqual someDeriv
+      dC_dx(0, 2, 0, ->, ->) shouldEqual zeroMap
+      dC_dx(0, 2, 1, ->, ->) shouldEqual zeroMap
     }
   }
 
@@ -122,6 +122,16 @@ class AvgPoolSpec extends FlatSpec with ShouldMatchers with TestTools{
       val y_bar: INDArray = vec(30, -32)
 
       validateBackProp(poolnet, input, y_bar)
+    }
+  }
+
+  "An average pooling layer" should "exhibit certain symmetries" in {
+
+    new TestData {
+      val poolnet: Layer = pool |:| dense |:| output
+      val y_bar2: INDArray = vec(30, -32, 30, -31).reshape(2,2)
+
+      validateBackProp(poolnet, Nd4j.vstack(input, input), y_bar2)
     }
   }
 
