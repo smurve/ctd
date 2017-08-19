@@ -12,8 +12,8 @@ import scala.util.Random
   * @param generator a function that returns Affine transformations to be applied before each epoch
   * @param random the random to be used in shuffle and perturbation operations
   */
-class SimpleOptimizer(val generator: () => Affine,
-                      random: Random) {
+class SimpleOptimizer(val generator: () => Affine = () => Affine.identity,
+                      random: Random = new Random()) {
 
 
   /** summing grad and cost at once. Used in reduce phase */
@@ -48,11 +48,11 @@ class SimpleOptimizer(val generator: () => Affine,
     * @param testSet the test set - images and labels
     * @param n_epochs number of epochs to spend training
     * @param eta the *pesky* learning rate
-    * @param reportEvery number of batches to pass before reporting cost
+    * @param reportEveryAfterBatches number of batches to pass before reporting cost
     */
   def train(model: Layer, nBatches: Int, parallelism: Int =1,
             trainingSet: (INDArray, INDArray), testSet: (INDArray, INDArray),
-            n_epochs: Int, eta: Double, reportEvery: Int): Unit = {
+            n_epochs: Int, eta: Double, reportEveryAfterBatches: Int): Unit = {
 
     assert(parallelism >= 1, "Parallelism can't be less than 1.")
 
@@ -65,17 +65,19 @@ class SimpleOptimizer(val generator: () => Affine,
     for (epoch <- 1 to n_epochs) {
 
       println(s"Starting epoch $epoch")
-
-      val (samples, labels) = shuffle(trainingSet, random = random, transform = generator())
+      println("  shuffling...")
+      val (samples, labels) = shuffle(trainingSet, random = random)
+      println("  Done.")
 
       for (batchNo <- 0 until nBatches) {
 
+        println(s"batch no $batchNo of $nBatches with $batchSize records")
         val offset = batchNo * batchSize
 
         /**
           * Here, we parallelize by mapping each batch to blocks and reducing (summing the gradients) afterwards
           */
-        val blocks = (0 until nBlocks).par
+        val blocks = if ( parallelism > 1 ) (0 until nBlocks).par else 0 until nBlocks
 
         val (g_total, c_total): (Seq[INDArray], Double) = blocks.map(block => {
 
@@ -88,10 +90,11 @@ class SimpleOptimizer(val generator: () => Affine,
 
         model.update(g_total.map(_ * -eta))
 
-        if (batchNo % reportEvery == 0)
+        if (batchNo % reportEveryAfterBatches == 0)
           println(s"Cost: $c_total")
       }
 
+      println("validating...")
       validate(model, testSet)
 
     }

@@ -5,8 +5,6 @@ import org.scalactic.Equality
 import org.scalatest.{FlatSpec, ShouldMatchers}
 import org.smurve.transform._
 
-import scala.util.Random
-
 class AffineSpec extends FlatSpec with ShouldMatchers {
 
   val seed = 123

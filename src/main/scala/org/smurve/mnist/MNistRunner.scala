@@ -48,7 +48,7 @@ abstract class MNistRunner extends MNISTTools {
       private val trainingSet = (img_train(0 -> N_TRAINING, ->), lbl_train(0 -> N_TRAINING, ->))
       private val testSet = (img_test(0 -> N_TEST, ->), lbl_test(0 -> N_TEST, ->))
 
-      val network: Layer = FCL(theta1) |:| ReLU() |:| FCL(theta2) |:| Sigmoid() |:| Euclidean()
+      val network: Layer = Dense(theta1) |:| ReLU() |:| Dense(theta2) |:| Sigmoid() |:| Euclidean()
 
       private val optimizer = new SimpleOptimizer(generator = generator, random = new Random(seed))
 
@@ -57,7 +57,7 @@ abstract class MNistRunner extends MNISTTools {
         parallelism = parallelism,
         trainingSet = trainingSet,
         testSet = testSet,
-        n_epochs = N_EPOCHS, eta = eta, reportEvery = reportEvery)
+        n_epochs = N_EPOCHS, eta = eta, reportEveryAfterBatches = reportEvery)
 
       saveModel ( STORE_AS, Map("Theta1"->theta1, "Theta2"->theta2))
 
@@ -77,7 +77,7 @@ abstract class MNistRunner extends MNISTTools {
     val weights = readModel ( name, List("Theta1", "Theta2"))
     val theta1_from_file = weights("Theta1")
     val theta2_from_file = weights("Theta2")
-    val new_network: Layer = FCL(theta1_from_file) |:| ReLU() |:| FCL(theta2_from_file) |:| Sigmoid() |:| Euclidean()
+    val new_network: Layer = Dense(theta1_from_file) |:| ReLU() |:| Dense(theta2_from_file) |:| Sigmoid() |:| Euclidean()
     val res = new_network.ffwd(testSet)
     val sample = testSet(0,->)
     println(new Grid(sample.reshape(28,28)))

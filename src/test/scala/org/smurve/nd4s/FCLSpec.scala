@@ -1,7 +1,6 @@
 package org.smurve.nd4s
 
 import org.nd4j.linalg.api.ndarray.INDArray
-import org.nd4j.linalg.factory.Nd4j
 import org.scalatest.{FlatSpec, ShouldMatchers}
 import org.nd4s.Implicits._
 
@@ -21,7 +20,7 @@ class FCLSpec extends FlatSpec with ShouldMatchers {
 
   "An FCL feed forward" should "simmply perform matrix multiplication on the batch" in {
     val x = vec(1f, 2, 3, 4).reshape(2, 2)
-    val network = FCL(theta) |:| Euclidean()
+    val network = Dense(theta) |:| Euclidean()
     val y = network.ffwd(x)
     y shouldEqual vec(3, 6, 9, 3, 10, 17).reshape(2, 3)
   }
@@ -32,7 +31,7 @@ class FCLSpec extends FlatSpec with ShouldMatchers {
 
     val y_bar = vec(2, 6, 5, 3, 4, 6).reshape(2, 3)
 
-    val network = FCL(theta) |:| output
+    val network = Dense(theta) |:| output
     network.fwbw(x, y_bar)
   }
 
@@ -59,7 +58,7 @@ class FCLSpec extends FlatSpec with ShouldMatchers {
 
     val output = Euclidean()
 
-    val f = FCL(theta) |:| output
+    val f = Dense(theta) |:| output
 
     val grad = (f.fwbw(x + dx1, y_bar)._3 - f.fwbw(x - dx1, y_bar)._3) / 2 / epsilon
     val grad1 = f.fwbw(x, y_bar)._1
@@ -73,11 +72,11 @@ class FCLSpec extends FlatSpec with ShouldMatchers {
 
     val y_bar = vec(2, 6, 5, 3, 4, 6).reshape(2, 3)
 
-    val fcl = FCL(theta)
+    val fcl = Dense(theta)
     val f = fcl |:| output
-    fcl += vec(0,0,0, 0, epsilon, 0, 0, 0, 0).reshape(3,3)
+    fcl.update(Seq(vec(0,0,0, 0, epsilon, 0, 0, 0, 0).reshape(3,3)))
     val c_right = f.fwbw(x, y_bar)._3
-    fcl += vec(0,0,0, 0, -2 * epsilon, 0, 0, 0, 0).reshape(3,3)
+    fcl.update(Seq(vec(0,0,0, 0, -2 * epsilon, 0, 0, 0, 0).reshape(3,3)))
     val c_left = f.fwbw(x, y_bar)._3
 
     val grad = (c_right - c_left) / 2 / epsilon

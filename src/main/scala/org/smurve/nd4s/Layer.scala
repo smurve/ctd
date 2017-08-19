@@ -2,28 +2,42 @@ package org.smurve.nd4s
 
 import org.nd4j.linalg.api.ndarray.INDArray
 
+import scala.collection.mutable
+
 /**
   * math-driven design of a network layer based on ND4J Linear Algebra implementation
   * A layer is designed as a parameterized function.
   * A network is a composition of layers, ending with an Outputlayer to the right and represented by the leftmost layer.
   * Forward pass and backprop must be implemented such that the subsequent layer is taken into account.
-  * See e.g. FCL implementation for details
+  * See e.g. Dense implementation for details
+  * Note that obviously we only support linear models
   */
 trait Layer {
 
   private var next: Option[Layer] = None
+  private var prev: Option[Layer] = None
+
+
+  /** automatically enumerate the layers in a network, starting with 1 */
+  protected def seqno: Int = prev.map(_.seqno + 1).getOrElse(1)
 
   /**
     * present the next layer
     *
-    * @return the next layer. There must be one, unless you override this in output layers
+    * @return the next layer. There must be one, unless you override nextLayer in output layers
     */
   def nextLayer: Layer = next.getOrElse(throw new IllegalStateException(
     "Network shouldn't end here. Are you missing an output layer?"))
 
 
-  def inititialize(layer: Layer): Unit = {
-    next = Some(layer)
+  /**
+    * initialize with the knowledge of the subsequent layer
+    *
+    * @param subsequent the layer just attached to the right
+    */
+  def inititialize(subsequent: Layer): Unit = {
+    next = Some(subsequent)
+    subsequent.prev = Some(this)
   }
 
   /**
@@ -48,6 +62,16 @@ trait Layer {
   }
 
   /**
+    * transitively send params through the network
+    *
+    * @param params = a triple of ('layer name', 'param name', 'param value')
+    *               the name is the simple class name plus the seqno
+    */
+  def setParams(params: (String, String, Any)*): Unit = {
+    nextLayer.setParams(params: _*)
+  }
+
+  /**
     * forward pass and back propagation in one method call
     *
     * @param x     the batch of input row vectors
@@ -58,9 +82,10 @@ trait Layer {
   /**
     * update the weights using the head of the Seq
     * implementers must forward the tail to the subsequent layers
+    *
     * @param grads the amount to be added
     */
-  def update (grads: Seq[INDArray]): Unit
+  def update(grads: Seq[INDArray]): Unit
 
   /**
     * Stacking operator with output.
@@ -75,7 +100,7 @@ trait Layer {
   }
 
   /**
-    * @return the rightmost layer in the network
+    * @return the rightmost layer in the network or this, if there is none
     */
   def rightmost: Layer = next match {
     case Some(n) => n.rightmost
@@ -84,6 +109,7 @@ trait Layer {
 
   /**
     * Composing two layers
+    *
     * @param next the subsequent layer
     * @return 'this', now representing the composition
     */

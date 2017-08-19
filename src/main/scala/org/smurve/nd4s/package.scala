@@ -3,9 +3,7 @@ package org.smurve
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4s.Implicits._
-import org.smurve.transform.{Affine, Grid}
 
-import scala.collection.mutable
 import scala.util.Random
 
 /**
@@ -24,10 +22,10 @@ package object nd4s {
   /**
     * vertically "pad" with ones.
     *
-    * 1  1
+    *              1  1
     *
     * a  b         a  b
-    * =>
+    *        =>
     * c  d         c  d
     *
     *
@@ -40,7 +38,7 @@ package object nd4s {
     * horizontically "pad" with ones.
     *
     * a  b         1  a  b
-    * =>
+    *        =>
     * c  d         1  c  d
     *
     *
@@ -60,93 +58,41 @@ package object nd4s {
 
   /**
     * work-around for broken map() on INDArray
-    * Only supporting tensors of rank 1 and 2
+    * Only supporting tensors of rank 1 to 5
     */
   def appf(x: INDArray, f: Double => Double): INDArray = {
-    val res = Nd4j.zeros(x.shape: _*)
-    val shape1 = if (x.shape.length == 1) 1 +: x.shape else x.shape
-    for (i <- 0 until shape1(0))
-      for (j <- 0 until shape1(1))
-        res(i, j) = f(x(i, j))
+    val res: INDArray = Nd4j.zeros(x.shape: _*)
+    for (i <- iArr(x)) {
+      i.length match {
+        case 1 => res(i(0)) = f(x(i: _*))
+        case 2 => res(i(0), i(1)) = f(x(i: _*))
+        case 3 => res(i(0), i(1), i(2)) = f(x(i: _*))
+        case 4 => res(i(0), i(1), i(2), i(3)) = f(x(i: _*))
+        case 5 => res(i(0), i(1), i(2), i(3), i(4)) = f(x(i: _*))
+      }
+    }
     res
   }
+
 
   /**
     *
     * @param labeledData the images/labels to be shuffled
     * @return
     */
-  def shuffle(labeledData: (INDArray, INDArray), random: Random = new Random, transform: Affine = Affine.identity): (INDArray, INDArray) = {
+  def shuffle(labeledData: (INDArray, INDArray), random: Random = new Random() ): (INDArray, INDArray) = {
 
-    def copy(from: INDArray, to: INDArray): Unit = {
-      val l = from.length()
-      (0 until l).foreach(i => to(i) = from(i))
-    }
+    require(labeledData._1.size(0) == labeledData._2.size(0), "Arrays to shuffle should have identical length")
 
-    val (samples, labels) = labeledData
+    val ( samples, labels ) = labeledData
+    val combined = Nd4j.hstack(samples, labels)
 
-    val sampleSize = samples.size(1)
-    val swapSample = Nd4j.zeros(sampleSize)
+    Nd4j.shuffle(combined, 1)
 
-    val labelSize = labels.size(1)
-    val swapLabel = Nd4j.zeros(labelSize)
-
-    (0 until sampleSize).foreach(i => {
-      val j = random.nextInt(sampleSize)
-
-      copy(samples.getRow(i), swapSample)
-      copy(samples.getRow(j), samples.getRow(i))
-      copy(swapSample, samples.getRow(j))
-
-      copy(labels.getRow(i), swapLabel)
-      copy(labels.getRow(j), labels.getRow(i))
-      copy(swapLabel, labels.getRow(j))
-    })
-
-    if (transform != Affine.identity) {
-      print("Starting to perturb...")
-      (0 until sampleSize by 10).foreach(i => {
-
-        if (i % 6 == 0) print(".")
-
-        tick("copying")
-        copy(samples.getRow(i), swapSample)
-        tick("reshaping")
-        val res = swapSample.reshape(28, 28)
-        tick("rotating")
-        val transformed = transform(new Grid(res))
-        tick("flattening")
-        val flat = Nd4j.toFlattened(transformed.field)
-        tick("copying back")
-        copy(flat, samples.getRow(i))
-      })
-    }
-
-    println("Done.")
-
-    bucket.foreach(entry => {
-      val k = entry._1
-      val s = entry._2._2
-      println(s"$k: $s")
-    })
-
-    labeledData
+    val lc = combined(->, 0->samples.size(1))
+    val rc = combined(->, samples.size(1)->combined.size(1))
+    (lc, rc)
   }
-
-  private def tick(key: String): Unit = {
-    val t = System.currentTimeMillis()
-    val entry = bucket.get(key)
-    if (entry.isDefined) {
-      val last = entry.get._1
-      val sum = entry.get._2
-      val dt = t - last
-      bucket.put(key, (t, sum + dt))
-    } else {
-      bucket.put(key, (t, 0))
-    }
-  }
-
-  private val bucket = mutable.HashMap[String, (Long, Long)]()
 
   def toArray(iNDArray: INDArray, width: Int = 28, height: Int = 28): Array[Double] = {
     val length = iNDArray.length
@@ -176,13 +122,13 @@ package object nd4s {
   /**
     * @return the "outer product": the Array containing all combinations
     */
-  def outer ( l: IArr, r: IArr ) : IArr = l.flatMap(i=>r.map(i ++ _))
+  def outer(l: IArr, r: IArr): IArr = l.flatMap(i => r.map(i ++ _))
 
   /**
     * @return an index array from ranges
     */
   def iArr(ranges: Range*): IArr = {
-    ranges.map(r=>r.toArray.map(Array(_))).toArray.reduce( outer )
+    ranges.map(r => r.toArray.map(Array(_))).toArray.reduce(outer)
   }
 
   /**
@@ -194,21 +140,23 @@ package object nd4s {
     * convenience method for displaying index arrays
     */
   def asString(arr: IArr): String = arr.toList.map(_.toList).toString
-    .replace("List", "").replace("(","[").replace(")", "]")
+    .replace("List", "").replace("(", "[").replace(")", "]")
 
 
   def reduceByElimination(source: INDArray, mi: IArr, discriminator: (Double, Double) => Boolean): (Double, Array[Int]) = {
-    mi.map(i=>(source(i:_*), i))
-      .reduce((a,e)=>if(discriminator(a._1, e._1)) a else e)
+    mi.map(i => (source(i: _*), i))
+      .reduce((a, e) => if (discriminator(a._1, e._1)) a else e)
   }
 
-  def minWithIndex(source: INDArray, mi: IArr): (Double, Array[Int]) = reduceByElimination( source, mi, _<_)
-  def maxWithIndex(source: INDArray, mi: IArr): (Double, Array[Int]) = reduceByElimination( source, mi, _>_)
+  def minWithIndex(source: INDArray, mi: IArr): (Double, Array[Int]) = reduceByElimination(source, mi, _ < _)
+
+  def maxWithIndex(source: INDArray, mi: IArr): (Double, Array[Int]) = reduceByElimination(source, mi, _ > _)
 
 
   /**
     * Utilty function to create multi-index Seq e.g. for iterating over entire tensors
     * create a cross-product-like Seq of triples from three Seqs of Ints
+    *
     * @param s1 the outermost sequence
     * @param s2 the middle sequence
     * @param s3 the innermost sequence
@@ -217,6 +165,55 @@ package object nd4s {
   def multiIndex(s1: Seq[Int], s2: Seq[Int], s3: Seq[Int]): Seq[(Int, Int, Int)] =
     s1.flatMap(i => s2.map(j => (i, j)))
       .flatMap(p => s3.map(k => (p._1, p._2, k)))
+
+
+  private def scaleToByte(min: Double, max: Double)(x: Double): Byte = {
+    if ( x < 0 ) 0 else {
+      val min0 = math.max(0, min)
+      (255 * (x - min0) / (max - min0)).toByte
+    }
+  }
+
+
+  def visualize (x: INDArray): String = {
+    require(x.rank == 2, "Can only visualize 2-dim arrays")
+    val min: Double = x.minT[Double]
+    val max: Double = x.maxT[Double]
+    ( 0 until x.size(0) ).map (i => {
+      val arr = toArray(x(i, ->))
+      val row = arr.map(scaleToByte(min, max))
+      rowAsString(row)
+    }).mkString("\n")}
+
+
+  private def rowAsString ( bytes: Array[Byte]) : String = {
+    bytes.map(b=>{
+      val n  = b & 0xFF
+      val c = if (n == 0) 0 else n / 32 + 1
+      c match {
+        case 0 => "  "
+        case 1 => "' "
+        case 2 => "''"
+        case 3 => "::"
+        case 4 => ";;"
+        case 5 => "cc"
+        case 6 => "OO"
+        case 7 => "00"
+        case 8 => "@@"
+      }
+    }).mkString("")
+  }
+
+  /**
+    * @param sep the separator to display between each two images
+    * @param imgs any number of equally-sized multi-line strings (using '\n')
+    * @return a string showing all multi-line strings as images in a row
+    */
+  def in_a_row(sep: String = " ")(imgs: String*): String = {
+    imgs.map(_.split("\n").toList).reduce((l, r) => {
+      l.zip(r).map(p => p._1 + sep + p._2)
+    }).reduce((l, r) => l + "\n" + r) + "\n"
+  }
 
 
 }

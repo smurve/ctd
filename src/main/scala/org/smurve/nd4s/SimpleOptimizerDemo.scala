@@ -20,10 +20,10 @@ object SimpleOptimizerDemo  {
     val (x1c, x2c) = (3, 3)
     val N_train = 20000
     val N_test = 1000
-    val N_EPOCHS = 5
-    val reportEvery = 100
-    val eta: Double = 3e-3
-    val nbatches = 100
+    val N_EPOCHS = 10
+    val reportEvery = 5
+    val eta: Double = 3e-4
+    val nbatches = 5
     val parallel = false
     val task = false // task or data parallel
 
@@ -38,14 +38,14 @@ object SimpleOptimizerDemo  {
   def main(args: Array[String]): Unit = {
     new Setup {
 
-      val nn: Layer = FCL(theta1) |:| ReLU() |:| FCL(theta2) |:| Sigmoid() |:| Euclidean()
+      val nn: Layer = Dense(theta1) |:| ReLU() |:| Dense(theta2) |:| Sigmoid() |:| Euclidean()
 
       val optimizer = new SimpleOptimizer(()=>Affine.identity, random = new Random(seed))
 
       optimizer.train(
-        model = nn, nBatches = nbatches, parallelism = 4,
+        model = nn, nBatches = nbatches, parallelism = 12,
         trainingSet = trSet, testSet = testSet,
-        n_epochs = N_EPOCHS, eta = eta, reportEvery = reportEvery)
+        n_epochs = N_EPOCHS, eta = eta, reportEveryAfterBatches = reportEvery)
     }
   }
 

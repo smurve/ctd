@@ -16,10 +16,10 @@ import scala.language.postfixOps
   * @param width_input  the number of columns of the input vector
   */
 case class Conv(theta: INDArray, depth_input: Int, height_input: Int, width_input: Int,
-                height_theta: Int) extends Layer {
+                height_theta: Int) extends Layer with ParameterSupport with StatsSupport {
 
   require(theta.rank == 3, "Expecting weight tensor of rank 3")
-  require(theta.size(1)-1 == height_theta, "Theta LRFs need an additional row for the bias. Did you supply?")
+  require(theta.size(1) - 1 == height_theta, "Theta LRFs need an additional row for the bias. Did you supply?")
 
   val depth_theta: Int = theta.size(0)
   val width_theta: Int = theta.size(2)
@@ -40,14 +40,14 @@ case class Conv(theta: INDArray, depth_input: Int, height_input: Int, width_inpu
     * o = ouput, i = input, t = theta
     * d = depth, c = column, r = row
     *
-    * @param x the input vector of rank 3: D_input x H x W
+    * @param inp the input vector of rank 3: D_input x H x W
     * @return the output of the convolution: rank 4! D_theta x D_input x H x W
     */
-  def fun(x: INDArray): INDArray = {
+  def fun(inp: INDArray): INDArray = {
 
-    require(x.rank == 4, "Expecting rank 4: N x D x H x W")
+    require(inp.rank == 4, "Expecting rank 4: N x D x H x W")
 
-    val N_inp = x.size(0)
+    val N_inp = inp.size(0)
     val output: INDArray = Nd4j.zeros(N_inp, depth_output, height_output, width_output)
 
     /* this iterates over the entire output tensor using multi-index*/
@@ -62,90 +62,95 @@ case class Conv(theta: INDArray, depth_input: Int, height_input: Int, width_inpu
                tc <- 0 until width_theta
           } yield {
             val (id, ir, ic) = idrc(or, od, oc, tr, tc)
-            val xdrc = x(n, id, ir, ic)
+            val xdrc = inp(n, id, ir, ic)
             val tdrc = theta(td_od(od), tr, tc)
             xdrc * tdrc
           }
         elems.sum + theta(td_od(od), 0, 0)
       }
     }
-    output.reshape(N_inp, depth_theta, depth_input, height_output, width_output)
+    val result = output.reshape(N_inp, depth_theta, depth_input, height_output, width_output)
+
+    printOutput(result)
+
+    result
+  }
+
+  def numOutputVectors: Int = integerParam("print.output").getOrElse(0)
+
+
+  def printOutput(array: INDArray): Unit = {
+    val n = numOutputVectors
+    if ( n > 0 ) {
+      for (i <- 0 until n ) {
+        val s = for {
+          td <- 0 until array.size(1)
+          id <- 0 until array.size(2)
+        } yield {
+          visualize(array(i, td, id, ->, ->).reshape(array.size(3), array.size(4)))
+        }
+        println(in_a_row(" | ")(s: _*))
+      }
+    }
   }
 
   /**
-    * partial derivatives with respect to x
-    */
-  def dy_dx(od: Int, or: Int, oc: Int, id: Int, ir: Int, ic: Int): Double = {
-
-    (for {tr <- 1 until height_theta + 1
-          tc <- 0 until width_theta
-          td = td_od(od)
-    } yield
-      if ((id, ir, ic) == idrc(or, od, oc, tr, tc))
-        theta(td, tr, tc)
-      else 0).sum
-  }
-
-  /**
-    * partial derivatives with respect to theta. Concise, still readable:
-    * For all input indexes, sum up the x values that have been used in fun() above
-    */
-  def dy_dTheta(n: Int, od: Int, or: Int, oc: Int, td: Int, tr: Int, tc: Int, x: INDArray): Double = {
-    val N_inp = x.size(0)
-    (for {
-      (id, ir, ic) <- indices_input
-      n <- 0 until N_inp
-    } yield
-      if ((id, ir, ic) == idrc(or, od, oc, tr, tc) && td == td_od(od))
-        x(n, id, ir, ic)
-      else 0).sum / N_inp
-  }
-  /**
-    * Compute the gradient by applying the chain rule
-    *
-    * @param x     the input vector
-    * @param dC_dy the gradient with respect to the output (from back-prop)
-    * @return the gradient
+    * The gradient with respect to theta
+    * @param x the input vector
+    * @param dC_dy the 'delta' from the subsequent layer
+    * @return the current gradient
     */
   def dC_dTheta(x: INDArray, dC_dy: INDArray): INDArray = {
-
     val N_inp = x.size(0)
     val grad = Nd4j.zeros(theta.shape(): _*)
-    for ((td, tr, tc) <- indices_theta) {
-      grad(td, tr, tc) = (
-        for {
-          (od, or, oc) <- indices_output
-          n <- 0 until x.size(0)
-        } yield
-          dC_dy(n, od / depth_input, od % depth_input, or, oc) * dy_dTheta(n, od, or, oc, td, tr, tc, x)).sum/N_inp
+
+    for {
+      (td, tr, tc) <- indices_theta
+    } {
+      val contrib: Double = (for {
+        n <- 0 until N_inp
+        id <- 0 until depth_input
+        (od, or, oc) <- indices_output
+        ir = or + tr
+        ic = oc + tc
+      } yield {
+        dC_dy(n, od / depth_input, od % depth_input, or, oc) * x(n, id, ir, ic)
+      }).sum
+      grad (td, tr, tc) = contrib / N_inp
     }
+
     grad(->, 0, 0) = 1 // from the bias in position 0, 0
     grad
   }
 
   /**
-    * Applying chain rule: dC_dx = dC_dy * dy_dx
-    *
-    * @param x     the input vector
-    * @param dC_dy the gradient with respect to the output (from back-prop)
-    * @return the cost function's derivative with regards to the input vector
+    * the gradient with respect to the input vector
+    * @param inp the input vector
+    * @param dC_dy the 'delta' from the subsequent layer
+    * @return the gradient dC/dx
     */
-  def dC_dx(x: INDArray, dC_dy: INDArray): INDArray = {
+  def dC_dx(inp: INDArray, dC_dy: INDArray): INDArray = {
 
-    val res = Nd4j.zeros(x.shape(): _*)
+    val res = Nd4j.zeros(inp.shape(): _*)
 
     for {
-      n <- 0 until x.size(0)
+      n <- 0 until inp.size(0)
       (id, ir, ic) <- indices_input
     } {
-      res(n, id, ir, ic) = (
-        for ((od, or, oc) <- indices_output)
-          yield {
-            if ( dy_dx(od, or, oc, id, ir, ic) != 0 )
-              dC_dy(n, od / depth_input, od % depth_input, or, oc) * dy_dx(od, or, oc, id, ir, ic)
-            else 0
-          }
-        ).sum
+      val contrib: Double = (for {
+        td <- 0 until depth_theta
+        or <- math.max(0, ir - height_theta + 1) to math.min(height_output - 1, ir)
+        oc <- math.max(0, ic - width_theta + 1) to math.min(width_output - 1, ic)
+      } yield {
+        val od = depth_input * td + id
+        val tr = ir - or
+        val tc = ic - oc
+        val t_drc = theta(td, tr + 1, tc)
+        val dC_dy_drc = dC_dy(n, od / depth_input, od % depth_input, or, oc)
+        t_drc * dC_dy_drc
+      }).sum
+
+      res(n, id, ir, ic) = contrib
     }
     res
   }
@@ -162,18 +167,19 @@ case class Conv(theta: INDArray, depth_input: Int, height_input: Int, width_inpu
     (dC_dx(x, dC_dy), dC_dTheta(x, dC_dy) :: grads, cost)
   }
 
-
-  def +=(dTheta: INDArray): Unit = theta += dTheta
-
   /**
     * update from head and pass the tail on to subsequent layers
     *
-    * @param grads : The list of gradients accumulated during training
+    * @param steps : The list of gradients accumulated during training
     */
-  override def update(grads: Seq[INDArray]): Unit = {
-    this += grads.head
-    nextLayer.update(grads.tail)
+  override def update(steps: Seq[INDArray]): Unit = {
+    if (booleanParam("print.stats").getOrElse(false)) {
+      printStats(theta = theta, steps = steps.head)
+    }
+    theta += steps.head
+    nextLayer.update(steps.tail)
   }
+
 
 
   /** current depth index of the input vector */

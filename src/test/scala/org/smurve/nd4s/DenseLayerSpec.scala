@@ -25,7 +25,7 @@ class DenseLayerSpec extends FlatSpec with ShouldMatchers with TestTools{
       1, -1
     ).reshape(13, 2)
 
-    val dense = FCL(theta2)
+    val dense = Dense(theta2)
     val output = Euclidean()
   }
 

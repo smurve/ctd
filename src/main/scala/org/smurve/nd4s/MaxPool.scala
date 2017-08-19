@@ -10,7 +10,7 @@ import org.nd4s.Implicits._
   * @param height_stride the vertical stride size
   * @param width_stride  the horizontal stride size
   */
-case class MaxPool(depth_stride: Int, height_stride: Int, width_stride: Int) extends Layer {
+case class MaxPool(depth_stride: Int, height_stride: Int, width_stride: Int) extends Layer with ParameterSupport {
 
   val N_values: Int = depth_stride * height_stride * width_stride
 
@@ -30,7 +30,7 @@ case class MaxPool(depth_stride: Int, height_stride: Int, width_stride: Int) ext
     * @return the pooling function values and partial derivatives in one go.
     */
   def fun2(x: INDArray): (INDArray, INDArray) = {
-    require(x.rank == 5, "Need to be rank 4: N_features x D x H x W")
+    require(x.rank == 5, "Need to be rank 5: N_samples x N_features x D x H x W")
     require(x.size(3) % height_stride == 0, "stride height doesn't divide input height.")
     require(x.size(4) % width_stride == 0, "stride width doesn't divide input width.")
     val N_inp = x.size(0)
@@ -47,6 +47,7 @@ case class MaxPool(depth_stride: Int, height_stride: Int, width_stride: Int) ext
       dy_dx(i(0), i(1), i(2), i(3), i(4)) = 1
     }
 
+    printOutput(res)
     (res, dy_dx)
   }
 
@@ -82,4 +83,23 @@ case class MaxPool(depth_stride: Int, height_stride: Int, width_stride: Int) ext
     * @param grads the amount to be added
     */
   override def update(grads: Seq[INDArray]): Unit = nextLayer.update(grads)
+
+
+  def numOutputVectors: Int = integerParam("print.output").getOrElse(0)
+
+  def printOutput(array: INDArray): Unit = {
+    val n = numOutputVectors
+    if ( n > 0 ) {
+      for (i <- 0 until n ) {
+        val s = for {
+          od <- 0 until array.size(1)
+        } yield {
+          visualize(array(i, od, ->, ->).reshape(array.size(2), array.size(3)))
+        }
+        println(in_a_row(" | ")(s: _*))
+      }
+    }
+  }
+
+
 }

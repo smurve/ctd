@@ -70,7 +70,7 @@ class AvgPoolSpec extends FlatSpec with ShouldMatchers with TestTools{
     val pool: Layer = (
       AvgPool(depth_stride = 2, height_stride = 2, width_stride = 2)
         |:| Flatten(3, 2, 2)).asInstanceOf[AvgPool]
-    val dense = FCL(theta2)
+    val dense = Dense(theta2)
     val output = Euclidean()
   }
 

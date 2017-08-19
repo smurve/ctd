@@ -7,7 +7,7 @@ import scala.language.postfixOps
   * Fully connected layer. Just needs to implement fwbw
   * @param theta the weight matrix including the bias as 0th row
   */
-case class FCL(theta: INDArray) extends Layer {
+case class Dense(theta: INDArray) extends Layer with ParameterSupport with StatsSupport {
 
   def checkshape (x: INDArray): Unit = {
     if ( x.rank == 3)
@@ -32,15 +32,16 @@ case class FCL(theta: INDArray) extends Layer {
     (dC_dx, grad :: grads, cost)
   }
 
-  def += ( dTheta: INDArray ): Unit = theta += dTheta
-
   /**
     * update from head and pass the tail on to subsequent layers
-    * @param grads: The list of gradients accumulated during training
+    * @param steps: The list of gradients accumulated during training
     */
-  override def update(grads: Seq[INDArray]): Unit = {
-    this += grads.head
-    nextLayer.update(grads.tail)
+  override def update(steps: Seq[INDArray]): Unit = {
+    if (booleanParam("print.stats").getOrElse(false)) {
+      printStats(theta = theta, steps = steps.head)
+    }
+    theta += steps.head
+    nextLayer.update(steps.tail)
   }
 }
 

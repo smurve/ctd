@@ -2,7 +2,6 @@ package org.smurve.nd4s
 
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
-import org.nd4s.Implicits._
 import org.scalatest.{FlatSpec, ShouldMatchers}
 
 class MaxPoolingSpec extends FlatSpec with ShouldMatchers with TestTools{
@@ -70,7 +69,7 @@ class MaxPoolingSpec extends FlatSpec with ShouldMatchers with TestTools{
     val pool: Layer = (
       MaxPool(depth_stride = 2, height_stride = 2, width_stride = 2)
         |:| Flatten(3, 2, 2)).asInstanceOf[MaxPool]
-    val dense = FCL(theta2)
+    val dense = Dense(theta2)
     val output = Euclidean()
   }
 

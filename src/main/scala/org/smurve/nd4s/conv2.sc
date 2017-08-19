@@ -1,46 +1,35 @@
+
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.smurve.nd4s._
 import org.nd4s.Implicits._
 
-val theta1 = Nd4j.rand(Array(10,3,3))-.5
-val theta2 = Nd4j.rand(Array(10, 3, 3)) -0.5
+
+val l1 = "11\n12\n13"
+val l2 = "21\n22\n23"
+val l3 = "31\n32\n33"
+
+val imgs = List(l1, l2, l3)
+
+imgs.map(_.split("\n").toList).reduce((l, r) => {
+  l.zip(r).map(p => p._1 + " | " + p._2)
+  //val res1: Seq[String] = l.zip(r).map(p => p._1 + " | " + p._2)
+  //res1.reduce((l,r) => l + "\n" + r )
+}).reduce((l, r) => l + "\n" + r)
 
 
-val input: INDArray = vec(
-  -2, -2, -2, -2,
-  -2, -2, -2, -2,
-  -2, -2, -2, -2,
-  -2, -2, -2, -2,
 
-  2, 2, 2, 2,
-  2, 2, 2, 2,
-  2, 2, 2, 2,
-  2, 2, 2, 2,
+def aligned(imgs: String*) = {
+  imgs.map(_.split("\n").toList).reduce((l, r) => {
+    l.zip(r).map(p => p._1 + " | " + p._2)
+  }).reduce((l, r) => l + "\n" + r)
+}
 
-  4, 4, 4, 4,
-  4, 4, 4, 4,
-  4, 4, 4, 4,
-  4, 4, 4, 4,
+aligned(l1, l2, l3)
 
-  4, 4, 4, 4,
-  4, 4, 4, 4,
-  4, 4, 4, 4,
-  4, 4, 4, 4,
+val m = vec(1,2,3,4).reshape(2,2)
 
-  1, 2, 3, 4,
-  2, 3, 4, 5,
-  3, 4, 5, 6,
-  4, 5, 6, 7,
+m.sumNumber().doubleValue()/m.length()
+m.stdNumber().doubleValue()
 
-  4, 5, 6, 7,
-  3, 4, 5, 6,
-  2, 3, 4, 5,
-  1, 2, 3, 4
-).reshape(3, 2, 4, 4)
-
-input.reshape(3,32)
-
-input.shape
-input.slice(0,0).shape
-
+"%5.3f".format(331.587)

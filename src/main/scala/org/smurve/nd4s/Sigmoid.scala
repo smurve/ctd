@@ -19,7 +19,7 @@ case class Sigmoid() extends Layer {
 
   def f_prime (x: INDArray): INDArray = {
     val s = sigmoid(x)
-    val one = Nd4j.ones(x.size(0), x.size(1))
+    val one = Nd4j.ones(x.shape: _*)
     s * ( one - s)
   }
 

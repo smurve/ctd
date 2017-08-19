@@ -31,7 +31,6 @@ trait TestTools extends ShouldMatchers {
     }
   }
 
-
   /**
     * the cost function
     *
@@ -40,7 +39,6 @@ trait TestTools extends ShouldMatchers {
     * @return the cost at the given input
     */
   def cost(network: Layer, y_bar: INDArray): INDArray => Double = network.fwbw(_, y_bar)._3
-
 
   /**
     * numerically compute the gradient with regards to x
@@ -55,7 +53,7 @@ trait TestTools extends ShouldMatchers {
     def epsvec(k: Int) = {
       val res = Nd4j.zeros(l)
       res(k) = precision.epsilon
-      res
+      res.reshape(x.shape:_*)
     }
 
     val res = Nd4j.zeros(l)

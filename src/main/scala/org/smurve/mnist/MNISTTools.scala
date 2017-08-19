@@ -9,9 +9,12 @@ import org.apache.spark.sql.SparkSession
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4s.Implicits._
+import org.smurve.mnist.MNISTConvNetDemo.readFromBinary
 import org.smurve.mnist.config.MNistConfig
 import org.smurve.nd4s._
 import org.smurve.transform.Grid
+
+import scala.util.Random
 
 trait MNISTTools  {
 
@@ -92,11 +95,32 @@ trait MNISTTools  {
     MNISTImage(arr.map(d => d.toByte), 28, 28).toString
   }
 
-
   protected def hdfs_save(rdd: RDD[MNISTImage], baseName: String): String = {
     val tmpName = baseName + "_" + UUID.randomUUID().toString
     rdd.saveAsObjectFile(tmpName)
     tmpName
+  }
+
+  /**
+    *
+    * @param numTrain number of training records/labels to read from file
+    * @param numTest number of test records/labels to read from file
+    * @param rnd a random generator
+    * @return a pair of pairs containing training samples and labels and test samples and labels
+    */
+  def  readMNIST(numTrain: Int = 60000, numTest: Int= 10000, rnd: Random = new Random()
+                ): ((INDArray, INDArray), (INDArray, INDArray)) = {
+
+    println("Reading images from file...")
+    val (img_test, lbl_test) = readFromBinary("test")
+    val trainingSet_orig = readFromBinary("train")
+    println("Done.")
+    println("Shuffling...")
+    val (img_train, lbl_train) = shuffle(trainingSet_orig, random = rnd)
+    println("Done.")
+    val trainingSet = (img_train(0 -> numTrain, ->), lbl_train(0 -> numTrain, ->))
+    val testSet = (img_test(0 -> numTest, ->), lbl_test(0 -> numTest, ->))
+    (trainingSet, testSet)
   }
 
 }

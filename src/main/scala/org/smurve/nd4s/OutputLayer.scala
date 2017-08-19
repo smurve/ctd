@@ -14,6 +14,11 @@ abstract class OutputLayer extends Layer {
   override def nextLayer: Layer = throw new NoSuchMethodException("Don't call nextLayer within an Output layer!")
 
   /**
+    * ignore
+    */
+  override def setParams(params: (String, String, Any)*): Unit = {}
+
+  /**
     * just pass the given value back
     * @param x the batch of input row vectors
     * @return the associated output vector

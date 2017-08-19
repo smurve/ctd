@@ -1,0 +1,23 @@
+Output of making openblas from source
+
+ OpenBLAS build complete. (BLAS CBLAS LAPACK LAPACKE)
+
+  OS               ... Darwin
+  Architecture     ... x86_64
+  BINARY           ... 64bit
+  C compiler       ... CLANG  (command line : clang)
+  Fortran compiler ... GFORTRAN  (command line : gfortran)
+-n   Library Name     ... libopenblas_sandybridgep-r0.3.0.dev.a
+ (Multi threaded; Max num-threads is 12)
+WARNING: If you plan to use the dynamic library libopenblas_sandybridgep-r0.3.0.dev.dylib, you must run:
+
+"make PREFIX=/your_installation_path/ install".
+
+(or set PREFIX in Makefile.rule and run make install.
+If you want to move the .dylib to a new location later, make sure you change
+the internal name of the dylib with:
+
+install_name_tool -id /new/absolute/path/to/libopenblas_sandybridgep-r0.3.0.dev.dylib libopenblas_sandybridgep-r0.3.0.dev.dylib
+
+To install the library, you can run
+  make  PREFIX=/path/to/your/installation install

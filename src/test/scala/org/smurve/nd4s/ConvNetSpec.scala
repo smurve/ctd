@@ -2,7 +2,6 @@ package org.smurve.nd4s
 
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
-import org.nd4s.Implicits._
 import org.scalatest.{FlatSpec, ShouldMatchers}
 
 class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools {
@@ -102,7 +101,7 @@ class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools {
     val pool: Layer = (
       AvgPool(depth_stride = 2, height_stride = 2, width_stride = 2)
         |:| Flatten(3, 2, 2)).asInstanceOf[AvgPool]
-    val dense = FCL(theta2)
+    val dense = Dense(theta2)
     val output = Euclidean()
   }
 
@@ -122,36 +121,13 @@ class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools {
       val y: INDArray = conv.fun(x)
       y shouldEqual expected_conv_result
 
-      conv.dy_dx(0, 1, 2, 0, 1, 1) shouldEqual 0.0 // x_011 is not involved in computing y_012
-      conv.dy_dx(0, 1, 2, 0, 1, 2) shouldEqual 1.0 // theta_010 = first LRF, second row (below the bias!), first column
     }
   }
 
-  "A conv layer" should "compute dy/dx as the weights involved to produce y from x" in {
+  "A conv net" should "compute dC/dx" in {
     new TestData {
-
-      conv.dy_dx(0, 1, 2, 0, 1, 2) shouldEqual theta1(0, 1, 0)
-      conv.dy_dx(0, 1, 2, 0, 1, 3) shouldEqual theta1(0, 1, 1)
-      conv.dy_dx(0, 1, 2, 0, 2, 2) shouldEqual theta1(0, 2, 0)
-      conv.dy_dx(0, 1, 2, 0, 2, 3) shouldEqual theta1(0, 2, 1)
-
-      conv.dy_dx(5, 3, 3, 1, 3, 3) shouldEqual theta1(2, 1, 0)
-      conv.dy_dx(5, 3, 3, 1, 3, 4) shouldEqual theta1(2, 1, 1)
-      conv.dy_dx(5, 3, 3, 1, 4, 3) shouldEqual theta1(2, 2, 0)
-      conv.dy_dx(5, 3, 3, 1, 4, 4) shouldEqual theta1(2, 2, 1)
-    }
-  }
-
-
-  "A conv layer" should "compute dy/dtheta as the x values involved to produce y from theta" in {
-
-    new TestData {
-      conv.dy_dTheta(0, 5, 3, 2, 1, 2, 0, x) shouldEqual 0.0
-
-      conv.dy_dTheta(0, 5, 3, 2, 2, 1, 0, x) shouldEqual x(0, 1, 3, 2)
-      conv.dy_dTheta(0, 5, 3, 2, 2, 1, 1, x) shouldEqual x(0, 1, 3, 3)
-      conv.dy_dTheta(0, 5, 3, 2, 2, 2, 0, x) shouldEqual x(0, 1, 4, 2)
-      conv.dy_dTheta(0, 5, 3, 2, 2, 2, 1, x) shouldEqual x(0, 1, 4, 3)
+      conv |:| output
+      conv.dC_dx(x, fake_dC_dy)
     }
   }
 
