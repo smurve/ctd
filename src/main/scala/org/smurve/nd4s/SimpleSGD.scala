@@ -12,8 +12,8 @@ import scala.util.Random
   * @param generator a function that returns Affine transformations to be applied before each epoch
   * @param random the random to be used in shuffle and perturbation operations
   */
-class SimpleOptimizer(val generator: () => Affine = () => Affine.identity,
-                      random: Random = new Random()) {
+class SimpleSGD(val generator: () => Affine = () => Affine.identity,
+                random: Random = new Random()) {
 
 
   /** summing grad and cost at once. Used in reduce phase */
@@ -51,14 +51,16 @@ class SimpleOptimizer(val generator: () => Affine = () => Affine.identity,
     * @param reportEveryAfterBatches number of batches to pass before reporting cost
     */
   def train(model: Layer, nBatches: Int, parallelism: Int =1,
-            trainingSet: (INDArray, INDArray), testSet: (INDArray, INDArray),
+            trainingSet: (INDArray, INDArray), testSet: Option[(INDArray, INDArray)] = None,
             n_epochs: Int, eta: Double, reportEveryAfterBatches: Int): Unit = {
 
-    assert(parallelism >= 1, "Parallelism can't be less than 1.")
+    require(parallelism >= 1, "Parallelism can't be less than 1.")
 
     val t0 = System.currentTimeMillis()
 
     val batchSize = trainingSet._1.size(0) / nBatches
+
+    require(batchSize >= parallelism, "batch size must be larger or equal parallelism.")
     val blockSize = batchSize / parallelism
     val nBlocks = batchSize / blockSize
 
@@ -94,8 +96,10 @@ class SimpleOptimizer(val generator: () => Affine = () => Affine.identity,
           println(s"Cost: $c_total")
       }
 
-      println("validating...")
-      validate(model, testSet)
+      testSet.foreach { existing =>
+        println("validating...")
+        validate(model, existing)
+      }
 
     }
 

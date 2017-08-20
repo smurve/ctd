@@ -24,7 +24,6 @@ object SimpleOptimizerDemo  {
     val reportEvery = 5
     val eta: Double = 3e-4
     val nbatches = 5
-    val parallel = false
     val task = false // task or data parallel
 
     val trSet: LabeledSet = createLabeledSet(N_train, x1c, x2c)
@@ -38,13 +37,17 @@ object SimpleOptimizerDemo  {
   def main(args: Array[String]): Unit = {
     new Setup {
 
-      val nn: Layer = Dense(theta1) |:| ReLU() |:| Dense(theta2) |:| Sigmoid() |:| Euclidean()
+      println("=============================================================================================")
+      println("                             Simple SGD Optimizer Demo ")
+      println("=============================================================================================")
 
-      val optimizer = new SimpleOptimizer(()=>Affine.identity, random = new Random(seed))
+      val nn: Layer = Dense(theta1) !! ReLU() !! Dense(theta2) !! Sigmoid() !! Euclidean()
+
+      val optimizer = new SimpleSGD(()=>Affine.identity, random = new Random(seed))
 
       optimizer.train(
         model = nn, nBatches = nbatches, parallelism = 12,
-        trainingSet = trSet, testSet = testSet,
+        trainingSet = trSet, testSet = Some(testSet),
         n_epochs = N_EPOCHS, eta = eta, reportEveryAfterBatches = reportEvery)
     }
   }

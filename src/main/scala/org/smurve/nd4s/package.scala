@@ -87,7 +87,7 @@ package object nd4s {
     val ( samples, labels ) = labeledData
     val combined = Nd4j.hstack(samples, labels)
 
-    Nd4j.shuffle(combined, 1)
+    Nd4j.shuffle(combined, random.self, 1)
 
     val lc = combined(->, 0->samples.size(1))
     val rc = combined(->, samples.size(1)->combined.size(1))

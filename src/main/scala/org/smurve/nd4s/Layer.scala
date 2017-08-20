@@ -2,8 +2,6 @@ package org.smurve.nd4s
 
 import org.nd4j.linalg.api.ndarray.INDArray
 
-import scala.collection.mutable
-
 /**
   * math-driven design of a network layer based on ND4J Linear Algebra implementation
   * A layer is designed as a parameterized function.
@@ -94,7 +92,7 @@ trait Layer {
     * @param outputLayer an output layer
     * @return this
     */
-  def |:|(outputLayer: OutputLayer): Layer = {
+  def !!(outputLayer: OutputLayer): Layer = {
     rightmost.inititialize(outputLayer)
     this
   }
@@ -113,7 +111,7 @@ trait Layer {
     * @param next the subsequent layer
     * @return 'this', now representing the composition
     */
-  def |:|(next: Layer): Layer = {
+  def !!(next: Layer): Layer = {
     val r = rightmost
     r.inititialize(next)
     this

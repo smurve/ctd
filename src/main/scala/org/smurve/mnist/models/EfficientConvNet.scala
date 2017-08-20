@@ -31,8 +31,8 @@ class EfficientConvNet extends NeuralNet {
   val dense1 = Dense(theta3)
   val dense2 = Dense(theta4)
 
-  override def model: Layer = shape |:| max1 |:| conv1 |:| max2 |:|
-    Flatten(8, 6, 6) |:| dense1 |:| ReLU() |:| dense2 |:| Sigmoid() |:| Euclidean()
+  override def model: Layer = shape !! max1 !! conv1 !! max2 !!
+    Flatten(8, 6, 6) !! dense1 !! ReLU() !! dense2 !! Sigmoid() !! Euclidean()
 
 
 }

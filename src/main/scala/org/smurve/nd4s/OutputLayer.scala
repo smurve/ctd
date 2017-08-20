@@ -52,7 +52,7 @@ abstract class OutputLayer extends Layer {
     * @return nothing
     * @throws UnsupportedOperationException, because this should be the last layer
     */
-  override def |:| ( rhs: Layer ): Layer = {
+  override def !!(rhs: Layer ): Layer = {
     throw new UnsupportedOperationException("Output layer has no next layer.")
   }
 

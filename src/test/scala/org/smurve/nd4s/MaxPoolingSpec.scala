@@ -68,7 +68,7 @@ class MaxPoolingSpec extends FlatSpec with ShouldMatchers with TestTools{
 
     val pool: Layer = (
       MaxPool(depth_stride = 2, height_stride = 2, width_stride = 2)
-        |:| Flatten(3, 2, 2)).asInstanceOf[MaxPool]
+        !! Flatten(3, 2, 2)).asInstanceOf[MaxPool]
     val dense = Dense(theta2)
     val output = Euclidean()
   }
@@ -84,7 +84,7 @@ class MaxPoolingSpec extends FlatSpec with ShouldMatchers with TestTools{
 
   "A max pool" should "feed forward by applying the max function" in {
     new TestData {
-      val poolNet: Layer = pool |:| output
+      val poolNet: Layer = pool !! output
 
       poolNet.ffwd(input) shouldEqual expected_pool_result
     }
@@ -94,7 +94,7 @@ class MaxPoolingSpec extends FlatSpec with ShouldMatchers with TestTools{
   "A max pooling layer" should "compute backprop dC/dx correctly" in {
 
     new TestData {
-      val poolnet: Layer = pool |:| dense |:| output
+      val poolnet: Layer = pool !! dense !! output
       val y_bar: INDArray = vec(2598, -2596)
 
       validateBackProp(poolnet, input, y_bar)
@@ -103,7 +103,7 @@ class MaxPoolingSpec extends FlatSpec with ShouldMatchers with TestTools{
 
   it should "exhibit certain symmetries" in {
     new TestData {
-      val poolnet: Layer = pool |:| dense |:| output
+      val poolnet: Layer = pool !! dense !! output
       val y_bar: INDArray = vec(2598, -2596, 2598, -2596).reshape(2,2)
       checkSymmetries(poolnet, Nd4j.vstack(input, input), y_bar)
     }

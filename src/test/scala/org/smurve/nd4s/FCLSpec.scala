@@ -20,7 +20,7 @@ class FCLSpec extends FlatSpec with ShouldMatchers {
 
   "An FCL feed forward" should "simmply perform matrix multiplication on the batch" in {
     val x = vec(1f, 2, 3, 4).reshape(2, 2)
-    val network = Dense(theta) |:| Euclidean()
+    val network = Dense(theta) !! Euclidean()
     val y = network.ffwd(x)
     y shouldEqual vec(3, 6, 9, 3, 10, 17).reshape(2, 3)
   }
@@ -31,7 +31,7 @@ class FCLSpec extends FlatSpec with ShouldMatchers {
 
     val y_bar = vec(2, 6, 5, 3, 4, 6).reshape(2, 3)
 
-    val network = Dense(theta) |:| output
+    val network = Dense(theta) !! output
     network.fwbw(x, y_bar)
   }
 
@@ -58,7 +58,7 @@ class FCLSpec extends FlatSpec with ShouldMatchers {
 
     val output = Euclidean()
 
-    val f = Dense(theta) |:| output
+    val f = Dense(theta) !! output
 
     val grad = (f.fwbw(x + dx1, y_bar)._3 - f.fwbw(x - dx1, y_bar)._3) / 2 / epsilon
     val grad1 = f.fwbw(x, y_bar)._1
@@ -73,7 +73,7 @@ class FCLSpec extends FlatSpec with ShouldMatchers {
     val y_bar = vec(2, 6, 5, 3, 4, 6).reshape(2, 3)
 
     val fcl = Dense(theta)
-    val f = fcl |:| output
+    val f = fcl !! output
     fcl.update(Seq(vec(0,0,0, 0, epsilon, 0, 0, 0, 0).reshape(3,3)))
     val c_right = f.fwbw(x, y_bar)._3
     fcl.update(Seq(vec(0,0,0, 0, -2 * epsilon, 0, 0, 0, 0).reshape(3,3)))
@@ -89,7 +89,7 @@ class FCLSpec extends FlatSpec with ShouldMatchers {
   }
 
   "A RELU" should "work as specified" in {
-    val net = ReLU() |:| Euclidean()
+    val net = ReLU() !! Euclidean()
     val x = vec(1,-2, 2, 0)
     val y_bar = appf(x, _+2)
     val y = net.ffwd(x)

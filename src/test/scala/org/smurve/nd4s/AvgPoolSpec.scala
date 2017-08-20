@@ -69,7 +69,7 @@ class AvgPoolSpec extends FlatSpec with ShouldMatchers with TestTools{
 
     val pool: Layer = (
       AvgPool(depth_stride = 2, height_stride = 2, width_stride = 2)
-        |:| Flatten(3, 2, 2)).asInstanceOf[AvgPool]
+        !! Flatten(3, 2, 2)).asInstanceOf[AvgPool]
     val dense = Dense(theta2)
     val output = Euclidean()
   }
@@ -84,7 +84,7 @@ class AvgPoolSpec extends FlatSpec with ShouldMatchers with TestTools{
 
   "An avg pool" should "calculate averages over width, height, and depth" in {
     new TestData {
-      val poolNet: Layer = pool |:| output
+      val poolNet: Layer = pool !! output
 
       poolNet.ffwd(input) shouldEqual expected_pool_result.ravel
     }
@@ -92,7 +92,7 @@ class AvgPoolSpec extends FlatSpec with ShouldMatchers with TestTools{
 
   "An avg pool" should "calculate the correct partial derivatives" in {
     new TestData {
-      val poolNet: Layer = pool |:| output
+      val poolNet: Layer = pool !! output
       val zeroMap: INDArray = Nd4j.zeros(1, 4, 4)
       val someDeriv: INDArray = vec(
         .25, .25, 0, 0,
@@ -118,7 +118,7 @@ class AvgPoolSpec extends FlatSpec with ShouldMatchers with TestTools{
   "An average pooling layer" should "compute backprop dC/dx correctly" in {
 
     new TestData {
-      val poolnet: Layer = pool |:| dense |:| output
+      val poolnet: Layer = pool !! dense !! output
       val y_bar: INDArray = vec(30, -32)
 
       validateBackProp(poolnet, input, y_bar)
@@ -128,7 +128,7 @@ class AvgPoolSpec extends FlatSpec with ShouldMatchers with TestTools{
   "An average pooling layer" should "exhibit certain symmetries" in {
 
     new TestData {
-      val poolnet: Layer = pool |:| dense |:| output
+      val poolnet: Layer = pool !! dense !! output
       val y_bar2: INDArray = vec(30, -32, 30, -31).reshape(2,2)
 
       validateBackProp(poolnet, Nd4j.vstack(input, input), y_bar2)

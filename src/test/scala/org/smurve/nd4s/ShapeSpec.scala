@@ -11,12 +11,12 @@ class ShapeSpec extends FlatSpec with ShouldMatchers with TestTools {
 
   "A Shape layer" should "reshape any number of input vectors correctly" in {
 
-    val network = Shape(2,2,2) |:| Euclidean()
+    val network = Shape(2,2,2) !! Euclidean()
 
     val y = network.ffwd(input)
     y shouldEqual input.reshape(3,2,2,2)
 
-    val (dC_dy, grads, c) = network.fwbw(input, input - 1)
+    val (dC_dy, grads, _) = network.fwbw(input, input - 1)
     dC_dy shouldEqual Nd4j.ones(3,2,2,2)
     grads should be ('empty)
   }

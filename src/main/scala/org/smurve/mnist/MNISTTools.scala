@@ -9,10 +9,8 @@ import org.apache.spark.sql.SparkSession
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4s.Implicits._
-import org.smurve.mnist.MNISTConvNetDemo.readFromBinary
 import org.smurve.mnist.config.MNistConfig
 import org.smurve.nd4s._
-import org.smurve.transform.Grid
 
 import scala.util.Random
 
@@ -108,8 +106,8 @@ trait MNISTTools  {
     * @param rnd a random generator
     * @return a pair of pairs containing training samples and labels and test samples and labels
     */
-  def  readMNIST(numTrain: Int = 60000, numTest: Int= 10000, rnd: Random = new Random()
-                ): ((INDArray, INDArray), (INDArray, INDArray)) = {
+  def  readMNIST(numTrain: Int, numTest: Int, rnd: Random = new Random()
+                ): ((INDArray, INDArray), Option[(INDArray, INDArray)]) = {
 
     println("Reading images from file...")
     val (img_test, lbl_test) = readFromBinary("test")
@@ -119,7 +117,11 @@ trait MNISTTools  {
     val (img_train, lbl_train) = shuffle(trainingSet_orig, random = rnd)
     println("Done.")
     val trainingSet = (img_train(0 -> numTrain, ->), lbl_train(0 -> numTrain, ->))
-    val testSet = (img_test(0 -> numTest, ->), lbl_test(0 -> numTest, ->))
+    val testSet = if (numTest > 0 )
+      Some((img_test(0 -> numTest, ->), lbl_test(0 -> numTest, ->)))
+    else
+      None
+
     (trainingSet, testSet)
   }
 

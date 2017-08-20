@@ -10,8 +10,6 @@ import scala.language.postfixOps
 case class Dense(theta: INDArray) extends Layer with ParameterSupport with StatsSupport {
 
   def checkshape (x: INDArray): Unit = {
-    if ( x.rank == 3)
-      println("oops")
     require(x.rank == 2, "FCL Layer requires rank 2")
     require(x.size(1) == theta.size(0) - 1, s"row vectors should have size ${theta.size(0) - 1}")
   }

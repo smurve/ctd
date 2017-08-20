@@ -2,7 +2,6 @@ package org.smurve.mnist
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SparkSession
-import org.nd4s.Implicits._
 import org.smurve.mnist.config.MyLocalConfig
 import org.smurve.mnist.models.EfficientConvNet
 import org.smurve.nd4s._
@@ -22,6 +21,10 @@ object MNISTConvNetDemo extends MNISTTools {
     */
   def main(args: Array[String]): Unit = {
 
+    println("=============================================================================================")
+    println("                      M N I S T   Convolutional Network Demo")
+    println("=============================================================================================")
+
     /**
       * create a neural network
       */
@@ -33,9 +36,8 @@ object MNISTConvNetDemo extends MNISTTools {
     val (trainingSet, testSet) = readMNIST(numTrain = 2000, numTest = 100)
 
     /**
-      * checking the intermediate steps
+      * Parameters
       */
-    val img = trainingSet._1(0, ->)
     convNet.setParams(
       ("*:MaxPool", "print.output", 0),
       ("*:Conv", "print.output", 0),
@@ -47,7 +49,7 @@ object MNISTConvNetDemo extends MNISTTools {
     /**
       * choose an optimizer
       */
-    val optimizer = new SimpleOptimizer()
+    val optimizer = new SimpleSGD()
 
 
     /**

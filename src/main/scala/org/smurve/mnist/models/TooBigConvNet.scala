@@ -45,8 +45,8 @@ class TooBigConvNet extends NeuralNet {
   val dense2 = Dense(theta4)
   val output = Euclidean()
 
-  override def model: Layer = shape |:| conv1 |:| max1 |:| conv2 |:| max2 |:| Sigmoid() |:|
-    Flatten(8, 6,6) |:| dense1 |:| relu2 |:| dense2 |:| output
+  override def model: Layer = shape !! conv1 !! max1 !! conv2 !! max2 !! Sigmoid() !!
+    Flatten(8, 6,6) !! dense1 !! relu2 !! dense2 !! output
 
 
 }

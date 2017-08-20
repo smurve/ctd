@@ -100,7 +100,7 @@ class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools {
     val conv = Conv(theta1, depth_input = 2, height_input = 5, width_input = 5, height_theta = 2)
     val pool: Layer = (
       AvgPool(depth_stride = 2, height_stride = 2, width_stride = 2)
-        |:| Flatten(3, 2, 2)).asInstanceOf[AvgPool]
+        !! Flatten(3, 2, 2)).asInstanceOf[AvgPool]
     val dense = Dense(theta2)
     val output = Euclidean()
   }
@@ -126,7 +126,7 @@ class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools {
 
   "A conv net" should "compute dC/dx" in {
     new TestData {
-      conv |:| output
+      conv !! output
       conv.dC_dx(x, fake_dC_dy)
     }
   }
@@ -141,7 +141,7 @@ class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools {
   "A conv net" should "build from basic layers and compute output vectors correctly" in {
 
     new TestData {
-      val convnet: Layer = conv |:| pool |:| dense |:| output
+      val convnet: Layer = conv !! pool !! dense !! output
 
       val y: INDArray = convnet.ffwd(x)
 
@@ -152,7 +152,7 @@ class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools {
 
   "A conv net" should "compute backprop dC/dx correctly" in {
     new TestData {
-      val convnet: Layer = conv |:| pool |:| dense |:| output
+      val convnet: Layer = conv !! pool !! dense !! output
       val y_bar: INDArray = vec(30, -32).reshape(1, 2)
 
       validateBackProp(convnet, x, y_bar)
@@ -161,7 +161,7 @@ class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools {
 
   it should "exhibit certain symmetries." in {
     new TestData {
-      val convnet: Layer = conv |:| pool |:| dense |:| output
+      val convnet: Layer = conv !! pool !! dense !! output
       val x2: INDArray = Nd4j.vstack(x,x)
 
       val y_bar2: INDArray = vec(30, -32, 31, -31).reshape(2, 2)
