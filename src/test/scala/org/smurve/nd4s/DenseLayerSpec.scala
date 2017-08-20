@@ -30,13 +30,14 @@ class DenseLayerSpec extends FlatSpec with ShouldMatchers with TestTools{
   }
 
 
-  "A dense layer" should "compute backprop dC/dx correctly" in {
+  "A dense layer" should "compute backprop dC/dx and gradient correctly" in {
 
     new TestData {
       val denseNet: Layer = dense !! output
       val y_bar: INDArray = vec(30, -31)
 
       validateBackProp(denseNet, input, y_bar)
+      validateGradTheta(denseNet, theta2, 0, input, y_bar )
     }
   }
 

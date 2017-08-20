@@ -78,6 +78,41 @@ trait TestTools extends ShouldMatchers {
   }
 
   /**
+    * Compare numerical and analytical computations of dC/dTheta
+    * @param net the network to be validated
+    * @param theta the weight matrix to be considered
+    * @param pos_theta the position of the analytical gradient in the backprop list
+    * @param x input
+    * @param y_bar expected outout (label)
+    */
+  def validateGradTheta(net: Layer, theta: INDArray, pos_theta: Int, x: INDArray, y_bar: INDArray): Unit = {
+
+    def epsvec(k: Int) = {
+      val res = Nd4j.zeros(theta.length())
+      res(k) = PRECISION.epsilon
+    }
+
+    val linTheta = theta.ravel
+    val numericalGrad = Nd4j.zeros(linTheta.length)
+
+    val (_, fromBackProp, _) = net.fwbw(x, y_bar)
+    for ( index <- 0 until linTheta.length ) {
+      val eps = epsvec(index)
+      linTheta += eps
+      val (_,_,cr) = net.fwbw(x, y_bar)
+      linTheta -= (epsvec(index) * 2)
+      val (_,_,cl) = net.fwbw(x, y_bar)
+      linTheta += epsvec(index)
+
+      val dC_dtheta = (cr - cl) / 2 / PRECISION.epsilon
+      numericalGrad(index) = dC_dtheta
+    }
+
+    fromBackProp(pos_theta) shouldEqual numericalGrad.reshape(theta.shape:_*)
+
+  }
+
+  /**
     * check symmetries hold for backpropagation
     */
   def checkSymmetries(net: Layer,  x: INDArray, y_bar: INDArray): Unit = {

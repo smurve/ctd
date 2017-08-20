@@ -19,6 +19,12 @@ class TestToolsSpec extends FlatSpec with ShouldMatchers with TestTools{
     nd4jEq.areEqual(vec(1,2,3,4), vec(1,2,3,4.01)) should be ( false)
   }
 
+  "validateGradTheta" should "compare analytical with numberical computation" in {
+    val theta = vec(1,2,1, 1,2,3,4,5,6,7,8,9).reshape(4,3)
+    val net = Dense(theta) !! Euclidean()
+    validateGradTheta(net, theta, 0, vec(1,2,3), vec(1,2,3))
+  }
+
   "sliceR" should "slice maintining the rank" in {
     val input = vec (1,2,3,4,1,2,3,4, 5,6,7,8,5,6,7,8, 1,3,5,7,1,3,5,7)
 

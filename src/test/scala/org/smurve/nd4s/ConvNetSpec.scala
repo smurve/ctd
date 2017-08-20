@@ -150,12 +150,14 @@ class ConvNetSpec extends FlatSpec with ShouldMatchers with TestTools {
   }
 
 
-  "A conv net" should "compute backprop dC/dx correctly" in {
+  "A conv net" should "compute backprop dC/dx and gradient correctly" in {
     new TestData {
       val convnet: Layer = conv !! pool !! dense !! output
       val y_bar: INDArray = vec(30, -32).reshape(1, 2)
 
       validateBackProp(convnet, x, y_bar)
+      validateGradTheta(convnet, theta2, 1, x, y_bar)
+      validateGradTheta(convnet, theta1, 0, x, y_bar)
     }
   }
 

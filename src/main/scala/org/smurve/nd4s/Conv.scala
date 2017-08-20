@@ -32,7 +32,7 @@ case class Conv(theta: INDArray, depth_input: Int, height_input: Int, width_inpu
     * Multi-Indices. Keeps more-dimensional iterations concise, still readable
     */
   private val indices_output = multiIndex(0 until depth_output, 0 until height_output, 0 until width_output)
-  private val indices_theta = multiIndex(0 until depth_theta, 0 until height_theta, 0 until width_theta)
+  private val indices_theta = multiIndex(0 until depth_theta, 0 until height_theta + 1, 0 until width_theta)
   private val indices_input = multiIndex(0 until depth_input, 0 until height_input, 0 until width_input)
 
   /**
@@ -109,17 +109,29 @@ case class Conv(theta: INDArray, depth_input: Int, height_input: Int, width_inpu
     } {
       val contrib: Double = (for {
         n <- 0 until N_inp
+        or <- 0 until height_output
+        oc <- 0 until width_output
         id <- 0 until depth_input
-        (od, or, oc) <- indices_output
-        ir = or + tr
-        ic = oc + tc
       } yield {
-        dC_dy(n, od / depth_input, od % depth_input, or, oc) * x(n, id, ir, ic)
+        val od = td * depth_input + id
+        val dcdy = dC_dy(n, od / depth_input, od % depth_input, or, oc)
+
+        if ( tr == 0 ) {
+          // theta has the bias coefficient in its first row/first column
+          if ( tc == 0 )
+            dcdy
+          else
+            0 // other columns in first row are 0
+        } else {
+          val ir = or + tr - 1
+          val ic = oc + tc
+          val dcdy = dC_dy(n, od / depth_input, od % depth_input, or, oc)
+          val xndrc = x(n, id, ir, ic)
+          dcdy * xndrc
+        }
       }).sum
       grad (td, tr, tc) = contrib / N_inp
     }
-
-    grad(->, 0, 0) = 1 // from the bias in position 0, 0
     grad
   }
 
