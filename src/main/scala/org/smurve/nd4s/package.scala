@@ -62,7 +62,7 @@ package object nd4s {
     */
   def appf(x: INDArray, f: Double => Double): INDArray = {
     val res: INDArray = Nd4j.zeros(x.shape: _*)
-    for (i <- iArr(x)) {
+    iArr(x).par.foreach { i =>
       i.length match {
         case 1 => res(i(0)) = f(x(i: _*))
         case 2 => res(i(0), i(1)) = f(x(i: _*))
@@ -106,7 +106,7 @@ package object nd4s {
     array
   }
 
-  def equiv(classification: INDArray, label: INDArray): Boolean = {
+  def equiv10(classification: INDArray, label: INDArray): Boolean = {
     val max = classification.max(1).getDouble(0)
     val lbl_icx = (label ** vec(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).T).getDouble(0).toInt
     val res = max == classification.getDouble(lbl_icx)

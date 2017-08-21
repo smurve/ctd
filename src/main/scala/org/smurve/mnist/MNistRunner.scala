@@ -53,8 +53,8 @@ abstract class MNistRunner extends MNISTTools {
       private val optimizer = new SimpleSGD(generator = generator, random = new Random(seed))
 
       optimizer.train(
-        model = network, nBatches = nbatches,
-        parallelism = parallelism,
+        model = network, nBatches = nbatches,equiv=equiv10,
+        parallel = parallelism,
         trainingSet = trainingSet,
         testSet = Some(testSet),
         n_epochs = N_EPOCHS, eta = eta, reportEveryAfterBatches = reportEvery)

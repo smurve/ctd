@@ -36,7 +36,7 @@ case class Dense(theta: INDArray) extends Layer with ParameterSupport with Stats
     */
   override def update(steps: Seq[INDArray]): Unit = {
     if (booleanParam("print.stats").getOrElse(false)) {
-      printStats(theta = theta, steps = steps.head)
+      printStats(s"Layer $seqno: {getClass.getSimpleName}", theta = theta, steps = steps.head)
     }
     theta += steps.head
     nextLayer.update(steps.tail)

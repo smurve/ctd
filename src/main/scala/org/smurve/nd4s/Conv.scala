@@ -36,6 +36,33 @@ case class Conv(theta: INDArray, depth_input: Int, height_input: Int, width_inpu
   private val indices_input = multiIndex(0 until depth_input, 0 until height_input, 0 until width_input)
 
   /**
+    * forward pass and back prop in one go.
+    *
+    * @param x     the batch of input row vectors
+    * @param y_bar the batch of expected outcome row vectors
+    * @return dC/dx for the backprop, the list of all gradients, and the cost
+    */
+  override def fwbw(x: INDArray, y_bar: INDArray): PROPAGATED = {
+    val (dC_dy, grads, cost) = nextLayer.fwbw(fun(x), y_bar)
+    (dC_dx(x, dC_dy), dC_dTheta(x, dC_dy) :: grads, cost)
+  }
+
+  /**
+    * update from head and pass the tail on to subsequent layers
+    *
+    * @param steps : The list of gradients accumulated during training
+    */
+  override def update(steps: Seq[INDArray]): Unit = {
+    if (booleanParam("print.stats").getOrElse(false)) {
+      printStats(name= s"Layer $seqno: ${getClass.getSimpleName}", theta = theta, steps = steps.head)
+    }
+    theta += steps.head
+    nextLayer.update(steps.tail)
+  }
+
+
+
+  /**
     * The convolution function. If you consider the given naming convention, the logic should be fairly obvious
     * o = ouput, i = input, t = theta
     * d = depth, c = column, r = row
@@ -166,32 +193,6 @@ case class Conv(theta: INDArray, depth_input: Int, height_input: Int, width_inpu
     }
     res
   }
-
-  /**
-    * forward pass and back prop in one go.
-    *
-    * @param x     the batch of input row vectors
-    * @param y_bar the batch of expected outcome row vectors
-    * @return dC/dx for the backprop, the list of all gradients, and the cost
-    */
-  def fwbw(x: INDArray, y_bar: INDArray): PROPAGATED = {
-    val (dC_dy, grads, cost) = nextLayer.fwbw(fun(x), y_bar)
-    (dC_dx(x, dC_dy), dC_dTheta(x, dC_dy) :: grads, cost)
-  }
-
-  /**
-    * update from head and pass the tail on to subsequent layers
-    *
-    * @param steps : The list of gradients accumulated during training
-    */
-  override def update(steps: Seq[INDArray]): Unit = {
-    if (booleanParam("print.stats").getOrElse(false)) {
-      printStats(theta = theta, steps = steps.head)
-    }
-    theta += steps.head
-    nextLayer.update(steps.tail)
-  }
-
 
 
   /** current depth index of the input vector */

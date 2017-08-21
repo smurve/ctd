@@ -46,7 +46,7 @@ object SimpleOptimizerDemo  {
       val optimizer = new SimpleSGD(()=>Affine.identity, random = new Random(seed))
 
       optimizer.train(
-        model = nn, nBatches = nbatches, parallelism = 12,
+        model = nn, nBatches = nbatches, parallel = 12, equiv = equiv10,
         trainingSet = trSet, testSet = Some(testSet),
         n_epochs = N_EPOCHS, eta = eta, reportEveryAfterBatches = reportEvery)
     }

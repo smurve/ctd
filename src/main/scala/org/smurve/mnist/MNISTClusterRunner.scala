@@ -13,7 +13,7 @@ object MNISTClusterRunner extends MNistRunner  {
   private val sparkConfig = new SparkConf().set("spark.cores.max", "8")
 
   override protected val session: SparkSession = SparkSession.builder().
-    master("spark://daphnis:5050").
+    master("mesos://daphnis:5050").
     config(sparkConfig).
     appName("MNIST").
     getOrCreate()

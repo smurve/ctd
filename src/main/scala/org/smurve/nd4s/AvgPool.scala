@@ -8,7 +8,7 @@ import org.nd4s.Implicits._
   * @param height_stride the vertical stride size
   * @param width_stride the horizontal stride size
   */
-case class AvgPool(depth_stride: Int, height_stride: Int, width_stride: Int) extends Layer {
+case class AvgPool(depth_stride: Int, height_stride: Int, width_stride: Int) extends Layer with ParameterSupport {
 
   val N_values: Int = depth_stride * height_stride * width_stride
 
@@ -37,6 +37,8 @@ case class AvgPool(depth_stride: Int, height_stride: Int, width_stride: Int) ext
           r <- ir until ir + height_stride
           c <- ic until ic + width_stride
         } yield x(ni, nf, d,r,c)).sum / N_values
+
+    printOutput(res)
     res
   }
 
@@ -72,4 +74,24 @@ case class AvgPool(depth_stride: Int, height_stride: Int, width_stride: Int) ext
     * @param grads the amount to be added
     */
   override def update(grads: Seq[INDArray]): Unit = nextLayer.update(grads)
+
+  def numOutputVectors: Int = integerParam("print.output").getOrElse(0)
+
+
+  def printOutput(array: INDArray): Unit = {
+    val n = numOutputVectors
+    if ( n > 0 ) {
+      for (i <- 0 until n ) {
+        val s = for {
+          td <- 0 until array.size(1)
+        } yield {
+          visualize(array(i, td, ->, ->).reshape(array.size(2), array.size(3)))
+        }
+        println(in_a_row(" | ")(s: _*))
+      }
+    }
+  }
+
+
+
 }

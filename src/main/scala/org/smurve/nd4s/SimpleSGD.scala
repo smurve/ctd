@@ -43,25 +43,26 @@ class SimpleSGD(val generator: () => Affine = () => Affine.identity,
     * Train the model using SGD
     * @param model the model to be trained
     * @param nBatches number of batches
-    * @param parallelism number of parralel execution threads to use
+    * @param parallel number of parralel execution threads to use
+    * @param equiv a function to compare the results with the given labels. Used for validation
     * @param trainingSet the training set - images and labels
     * @param testSet the test set - images and labels
     * @param n_epochs number of epochs to spend training
     * @param eta the *pesky* learning rate
     * @param reportEveryAfterBatches number of batches to pass before reporting cost
     */
-  def train(model: Layer, nBatches: Int, parallelism: Int =1,
+  def train(model: Layer, nBatches: Int, parallel: Int =1, equiv: (INDArray, INDArray) => Boolean,
             trainingSet: (INDArray, INDArray), testSet: Option[(INDArray, INDArray)] = None,
             n_epochs: Int, eta: Double, reportEveryAfterBatches: Int): Unit = {
 
-    require(parallelism >= 1, "Parallelism can't be less than 1.")
+    require(parallel >= 1, "Parallelism can't be less than 1.")
 
     val t0 = System.currentTimeMillis()
 
     val batchSize = trainingSet._1.size(0) / nBatches
 
-    require(batchSize >= parallelism, "batch size must be larger or equal parallelism.")
-    val blockSize = batchSize / parallelism
+    require(batchSize >= parallel, "batch size must be larger or equal parallelism.")
+    val blockSize = batchSize / parallel
     val nBlocks = batchSize / blockSize
 
     for (epoch <- 1 to n_epochs) {
@@ -79,7 +80,7 @@ class SimpleSGD(val generator: () => Affine = () => Affine.identity,
         /**
           * Here, we parallelize by mapping each batch to blocks and reducing (summing the gradients) afterwards
           */
-        val blocks = if ( parallelism > 1 ) (0 until nBlocks).par else 0 until nBlocks
+        val blocks = if ( parallel > 1 ) (0 until nBlocks).par else 0 until nBlocks
 
         val (g_total, c_total): (Seq[INDArray], Double) = blocks.map(block => {
 
@@ -98,7 +99,7 @@ class SimpleSGD(val generator: () => Affine = () => Affine.identity,
 
       testSet.foreach { existing =>
         println("validating...")
-        validate(model, existing)
+        validate(model, existing, equiv)
       }
 
     }
@@ -114,7 +115,7 @@ class SimpleSGD(val generator: () => Affine = () => Affine.identity,
     * @param model the model to validate
     * @param testSet the pair of images/labels to validate against
     */
-  def validate ( model: Layer, testSet: (INDArray, INDArray)): Unit = {
+  def validate ( model: Layer, testSet: (INDArray, INDArray), equiv: (INDArray, INDArray) => Boolean ): Unit = {
     val N_TEST = testSet._2.size(0)
     val res = model.ffwd(testSet._1)
 

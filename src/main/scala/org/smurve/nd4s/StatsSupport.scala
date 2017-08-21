@@ -4,9 +4,9 @@ import org.nd4j.linalg.api.ndarray.INDArray
 
 trait StatsSupport {
 
-  def printStats(steps: INDArray, theta: INDArray): Unit = {
+  def printStats(name: String, steps: INDArray, theta: INDArray): Unit = {
 
-    println(s"Statistics for ${getClass.getSimpleName}")
+    println(s"Statistics for $name")
     val fmt = "%8s: min: %5.4f - max: %5.4f - avg: %5.4f - std: %5.4f"
 
     val avg_steps = steps.sumNumber.doubleValue / steps.length
