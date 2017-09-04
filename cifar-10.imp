@@ -1,0 +1,4 @@
+import org.smurve.cifar10._
+import org.nd4s.Implicits._
+import org.apache.spark.sql.functions._
+

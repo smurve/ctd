@@ -4,13 +4,16 @@ version := "1.0"
 
 scalaVersion := "2.11.8"
 
+
 val nd4jVersion = "0.9.1"
+val dl4jVersion = "0.9.1"
 
 
 
 val cluster = sys.props.get("cluster").orElse(Some("false")).get
 
 val localLibs = Seq(
+  "com.sksamuel.scrimage" %% "scrimage-core" % "2.1.6", // for visualization
   "org.nd4j" % "nd4j-native-platform" % nd4jVersion,
   "org.apache.spark" %% "spark-core" % "2.2.0",
   "org.apache.spark" %% "spark-streaming" % "2.2.0",
@@ -18,7 +21,7 @@ val localLibs = Seq(
   "org.apache.hadoop" % "hadoop-client" % "2.7.3"
 )
 
-val clusterLibs =   Seq(
+val clusterLibs = Seq(
   //"org.nd4j" % "nd4j-cuda-8.0" % nd4jVersion  % "provided" classifier "" classifier "linux-x86_64",
   "org.nd4j" % "nd4j-native-platform" % nd4jVersion, //classifier "" classifier "linux-x86_64",
   //"org.bytedeco.javacpp-presets" % "cuda" % "8.0-6.0-1.3" classifier "" classifier "linux-x86_64",
@@ -29,7 +32,7 @@ val clusterLibs =   Seq(
 
 
 
-val provided = if ( cluster == "false" ) localLibs else clusterLibs
+val provided = if (cluster == "false") localLibs else clusterLibs
 
 
 
@@ -38,5 +41,7 @@ libraryDependencies ++= provided
 libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "2.2.6" % "test",
   "org.nd4j" %% "nd4s" % nd4jVersion,
-  "com.github.fommil.netlib" % "all" % "1.1.2"
+  "com.github.fommil.netlib" % "all" % "1.1.2",
+  "org.deeplearning4j" % "deeplearning4j-core" % dl4jVersion,
+  "org.deeplearning4j" % "deeplearning4j-nn" % dl4jVersion
 )

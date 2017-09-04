@@ -22,10 +22,10 @@ package object nd4s {
   /**
     * vertically "pad" with ones.
     *
-    *              1  1
+    * 1  1
     *
     * a  b         a  b
-    *        =>
+    * =>
     * c  d         c  d
     *
     *
@@ -38,7 +38,7 @@ package object nd4s {
     * horizontically "pad" with ones.
     *
     * a  b         1  a  b
-    *        =>
+    * =>
     * c  d         1  c  d
     *
     *
@@ -80,17 +80,17 @@ package object nd4s {
     * @param labeledData the images/labels to be shuffled
     * @return
     */
-  def shuffle(labeledData: (INDArray, INDArray), random: Random = new Random() ): (INDArray, INDArray) = {
+  def shuffle(labeledData: (INDArray, INDArray), random: Random = new Random()): (INDArray, INDArray) = {
 
     require(labeledData._1.size(0) == labeledData._2.size(0), "Arrays to shuffle should have identical length")
 
-    val ( samples, labels ) = labeledData
+    val (samples, labels) = labeledData
     val combined = Nd4j.hstack(samples, labels)
 
     Nd4j.shuffle(combined, random.self, 1)
 
-    val lc = combined(->, 0->samples.size(1))
-    val rc = combined(->, samples.size(1)->combined.size(1))
+    val lc = combined(->, 0 -> samples.size(1))
+    val rc = combined(->, samples.size(1) -> combined.size(1))
     (lc, rc)
   }
 
@@ -168,27 +168,30 @@ package object nd4s {
 
 
   private def scaleToByte(min: Double, max: Double)(x: Double): Byte = {
-    if ( x < 0 ) 0 else {
+    if (x < 0) 0 else {
       val min0 = math.max(0, min)
       (255 * (x - min0) / (max - min0)).toByte
     }
   }
 
 
-  def visualize (x: INDArray): String = {
+  def visualize(x: INDArray): String = {
+    val hborder = " " + ("-" * 2 * x.size(0)) + " \n"
     require(x.rank == 2, "Can only visualize 2-dim arrays")
     val min: Double = x.minT[Double]
     val max: Double = x.maxT[Double]
-    ( 0 until x.size(0) ).map (i => {
+    val img = (0 until x.size(0)).map(i => {
       val arr = toArray(x(i, ->))
       val row = arr.map(scaleToByte(min, max))
       rowAsString(row)
-    }).mkString("\n")}
+    }).mkString("\n")
+    hborder + img + "\n" + hborder
+  }
 
 
-  private def rowAsString ( bytes: Array[Byte]) : String = {
-    bytes.map(b=>{
-      val n  = b & 0xFF
+  private def rowAsString(bytes: Array[Byte]): String = {
+    val res = bytes.map(b => {
+      val n = b & 0xFF
       val c = if (n == 0) 0 else n / 32 + 1
       c match {
         case 0 => "  "
@@ -202,10 +205,11 @@ package object nd4s {
         case 8 => "@@"
       }
     }).mkString("")
+    "|" + res + "|"
   }
 
   /**
-    * @param sep the separator to display between each two images
+    * @param sep  the separator to display between each two images
     * @param imgs any number of equally-sized multi-line strings (using '\n')
     * @return a string showing all multi-line strings as images in a row
     */

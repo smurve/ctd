@@ -15,15 +15,15 @@ abstract class MNistRunner extends MNISTTools {
   trait Params {
 
     var STORE_AS = "target/tmp/MNIST_DEMO"
-    val N_TRAINING = 6000 // max 60000
+    val N_TRAINING = 60000 // max 60000
     val N_TEST = 1000 // max 10000
     val N_EPOCHS = 3
-    val eta: Double = 1e-4 // try 1e-2 to 1e-5 by factors of 3
+    val eta: Double = 5e-6 // try 1e-2 to 1e-5 by factors of 3
 
-    val nbatches = 600
+    val nbatches = 50
     val reportEvery = 10
 
-    val parallelism = 4
+    val parallelism = 12
 
     val theta1: INDArray = (Nd4j.rand(seed, 785, 200) - .5) / 1000
     val theta2: INDArray = (Nd4j.rand(seed, 201, 10) - .5) / 1000

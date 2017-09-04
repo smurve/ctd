@@ -10,10 +10,12 @@ import org.smurve.mnist.config.MyHDFSConfig
 object MNISTClusterRunner extends MNistRunner  {
 
   protected val config = new MyHDFSConfig
-  private val sparkConfig = new SparkConf().set("spark.cores.max", "8")
+  private val sparkConfig = new SparkConf()
+    .set("spark.cores.max", "8")
+    .set("spark.submit.deployMode", "client")
 
   override protected val session: SparkSession = SparkSession.builder().
-    master("mesos://daphnis:5050").
+    master("spark://daphnis:5050").
     config(sparkConfig).
     appName("MNIST").
     getOrCreate()
