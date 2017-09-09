@@ -16,10 +16,6 @@ import scala.language.postfixOps
 
 trait CIFAR10Tools {
 
-  protected val config: CIFAR10Config
-  protected val session: SparkSession
-  protected val sc: SparkContext
-
   val IMG_WIDTH = 32
   val IMG_HEIGHT = 32
   val NUM_CHANNELS = 3
@@ -40,33 +36,6 @@ trait CIFAR10Tools {
     "truck")
 
 
-  /**
-    *
-    * @param pattern a file pattern to be appended to the config's base path (prefix)
-    * @return an RDD containing the file names and the associated portable data streams
-    */
-  def readData(pattern: String): RDD[(String, PortableDataStream)] = sc.binaryFiles(config.prefix + s"/$pattern")
-
-
-  /**
-    * read an entire data file into a pair on INDArrays
-    * This file is assumed to contain 10000 records of size 3073
-    * @param fileName the simple file name of the binary file
-    * @return
-    */
-  def read (fileName: String): (INDArray, INDArray) = {
-    val rdd = readData(fileName)
-    val arr = rdd.collect.head._2.toArray.map(b => (b & 0xFF).toDouble)
-
-    val ndarr = Nd4j.create(arr).reshape( NUM_RECORDS_PER_FILE, BUFFER_SIZE_PER_ENTRY)
-
-    val samples = ndarr(->, 1->) / 255
-
-    val labels = Nd4j.zeros(10 * NUM_RECORDS_PER_FILE).reshape(NUM_RECORDS_PER_FILE, 10)
-    for ( i <- 0 until NUM_RECORDS_PER_FILE ) labels(i, ndarr(i, 0).toInt) = 1.0
-
-    (samples, labels)
-  }
 
   /**
     * read the next image out of an open stream: The structure is assumed to be 1 + 3 x 32 x 32.
@@ -86,6 +55,17 @@ trait CIFAR10Tools {
       RGBColor(red & 0xFF, green & 0xFF, blue & 0xFF).toPixel
     }
     (Image(IMG_WIDTH, IMG_HEIGHT, pixels.toArray), buffer(0).toInt)
+  }
+
+  def asImage(inda: INDArray): Image = {
+    assert(inda.shape() sameElements Array(1, NUM_CHANNELS, IMG_HEIGHT, IMG_WIDTH))
+    val pixels = for (pos <- 0 until CHANNEL_SIZE) yield {
+      val red = (inda.getDouble(pos) * 256 ).toInt
+      val green = (inda.getDouble(pos + CHANNEL_SIZE) * 256 ).toInt
+      val blue = (inda.getDouble(pos + 2 * CHANNEL_SIZE) * 256 ).toInt
+      RGBColor(red, green, blue ).toPixel
+    }
+    Image(IMG_WIDTH, IMG_HEIGHT, pixels.toArray)
   }
 
 

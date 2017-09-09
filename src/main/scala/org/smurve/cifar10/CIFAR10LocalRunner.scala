@@ -4,9 +4,9 @@ import scala.language.postfixOps
 
 object CIFAR10LocalRunner {
 
-  val size_batch = 1000
-  val n_batches = 10
-  val n_epochs = 50
+  val size_batch = 100
+  val n_batches = 100
+  val n_epochs = 30
 
   def main(args: Array[String]): Unit = {
 
@@ -26,8 +26,15 @@ object CIFAR10LocalRunner {
     println("Done.")
 
     println("Creating the model...")
-    val model = new CIFAR10Model(seed = 5432).train(CIFAR10Data((trs, trl), (tes, tel)), n_epochs, n_batches, size_batch)
+    //val model = new Conv2Model(n_features_1 = 32, n_features_2 = 32, n_dense = 500, eta = 1e-4, seed = 1234)
+    val model = new JoelsModel(nf_1 = 32, nf_2 = 64, nf_3=128, n_dense = 1024, eta = 1e-4, seed = 1234)
+    //val model = new DenseModel(n_dense = 500, eta = 1e-3, seed = 1234)
+
+    println("Training the model...")
+    model.train(LabeledData((trs, trl), (tes, tel)), n_epochs, n_batches, size_batch)
+
     println("Done.")
+
 
     //model.save()
   }
