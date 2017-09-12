@@ -1,10 +1,9 @@
 package org.smurve.shapes
 
-import org.smurve.shapes.ShapeRunner.Params
 import scopt.OptionParser
 
 
-class CmdLineTool(params: Params) {
+class CmdLineTool() {
 
 
   val parser = new OptionParser[CmdLineArgs]("ShapeRunner") {

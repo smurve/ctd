@@ -10,7 +10,7 @@ import org.nd4s.Implicits._
 import org.smurve.cifar10.config.CIFAR10Config
 import scala.language.postfixOps
 
-trait CIFAR10SparkEnv extends CIFAR10Tools{
+trait CIFAR10SparkEnv extends CIFAR10Tools {
 
   protected val config: CIFAR10Config
   protected val session: SparkSession
@@ -27,19 +27,28 @@ trait CIFAR10SparkEnv extends CIFAR10Tools{
   /**
     * read an entire data file into a pair on INDArrays
     * This file is assumed to contain 10000 records of size 3073
+    *
     * @param fileName the simple file name of the binary file
     * @return
     */
-  def read (fileName: String, num_records: Int = NUM_RECORDS_PER_FILE): (INDArray, INDArray) = {
+  def read(fileName: String, num_records: Int = NUM_RECORDS_PER_FILE): (INDArray, INDArray) = {
     val rdd = readData(fileName)
-    val arr = rdd.collect.head._2.toArray.map(b => (b & 0xFF).toDouble)
+    val pds: PortableDataStream = rdd.collect.head._2
+    val bytes = pds.toArray()// new Array[Byte](num_records * BUFFER_SIZE_PER_ENTRY)
 
-    val ndarr = Nd4j.create(arr).reshape( num_records, BUFFER_SIZE_PER_ENTRY)
+    val arr = bytes.map(b => (b & 0xFF).toFloat)
 
-    val samples = ndarr(->, 1->).reshape(num_records, NUM_CHANNELS, IMG_HEIGHT, IMG_WIDTH) / 255
+    val ndarr = Nd4j.create(arr)
+    val asRecords = ndarr.reshape(NUM_RECORDS_PER_FILE, BUFFER_SIZE_PER_ENTRY)
+    val reduced = asRecords(0 -> num_records, ->)
+
+    val samples = reduced(->, 1 ->).reshape(num_records, NUM_CHANNELS, IMG_HEIGHT, IMG_WIDTH) / 255
 
     val labels = Nd4j.zeros(10 * num_records).reshape(num_records, 10)
-    for ( i <- 0 until num_records ) labels(i, ndarr(i, 0).toInt) = 1.0
+    for (i <- 0 until num_records)  {
+      val value = bytes(i * BUFFER_SIZE_PER_ENTRY).toInt
+      labels(i, value) = 1.0
+    }
 
     (samples, labels)
   }

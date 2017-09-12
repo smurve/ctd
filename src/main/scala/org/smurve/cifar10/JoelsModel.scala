@@ -10,19 +10,96 @@ import org.deeplearning4j.nn.conf.{MultiLayerConfiguration, NeuralNetConfigurati
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.optimize.listeners.{ParamAndGradientIterationListener, ScoreIterationListener}
+import org.deeplearning4j.parallelism.ParallelWrapper
 import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.dataset.DataSet
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.lossfunctions.LossFunctions
 import org.nd4s.Implicits._
+import org.smurve.cifar10.runner.HyperParams
 import org.smurve.dl4j.ActivationChecker
 
 
 class JoelsModel(n_classes: Int = 10, width: Int = 32, height: Int = 32, depth: Int = 3,
-                 nf_1: Int = 32, nf_2: Int = 64, nf_3: Int = 128, n_dense: Int = 1024 ,
+                 nf_1: Int = 32, nf_2: Int = 64, nf_3: Int = 128, n_dense: Int = 1024,
                  eta: Double, seed: Int = 5432) extends CIFAR10Tools {
 
-  val model: MultiLayerNetwork = createModel( depth )
+  lazy val cudaEnv: Boolean = {
+    try {
+      Class.forName("org.nd4j.jita.conf.CudaEnvironment")
+      true
+    } catch {
+      case _: ClassNotFoundException => false
+    }
+  }
 
+/*
+  if (cudaEnv) {
+    import org.nd4j.jita.conf.CudaEnvironment
+    CudaEnvironment.getInstance().getConfiguration
+      // key option enabled
+      .allowMultiGPU(true)
+
+      // we're allowing larger memory caches
+      .setMaximumDeviceCache(2L * 1024L * 1024L * 1024L)
+
+      // cross-device access is used for faster model averaging over pcie
+      .allowCrossDeviceAccess(false)
+  }*/
+
+
+  val model: MultiLayerNetwork = createModel(depth)
+
+
+  def this(hyperParams: HyperParams) = this(eta = hyperParams.eta)
+
+
+  def train(trainingSet: DataSetIterator, testSet: DataSetIterator): Unit = {
+
+    val pgil = new ParamAndGradientIterationListener(
+      /*iterations=*/ 1,
+      /* printHeader = */ true,
+      /*printMean=*/ false,
+      /* printMinMax=*/ true,
+      /*printMeanAbsValue=*/ false,
+      /*outputToConsole=*/ false,
+      /*outputToFile = */ true,
+      /*outputToLogger = */ false,
+      /*file = */ new File("stats.csv"),
+      /*delimiter = */ ",")
+
+    model.setListeners(new ScoreIterationListener(1), pgil)
+
+    if ( cudaEnv ) {
+      val pw: ParallelWrapper = new ParallelWrapper.Builder(model)
+        // DataSets prefetching options. Set this value with respect to number of actual devices
+        .prefetchBuffer(2)
+
+        // set number of workers equal to number of available devices. x1-x2 are good values to start with
+        .workers(2)
+
+        // rare averaging improves performance, but might reduce model accuracy
+        .averagingFrequency(3)
+
+        // if set to TRUE, on every averaging model score will be reported
+        .reportScoreAfterAveraging(true)
+
+        .build()
+
+      pw.fit(trainingSet)
+
+    } else {
+      model.fit(trainingSet)
+    }
+
+
+    println("Training done. Evaluating...")
+
+    val eval = model.evaluate(testSet)
+
+    println(eval.stats)
+
+  }
 
 
   def train(data: LabeledData, n_epochs: Int, n_batches: Int, size_batches: Int): Unit = {
@@ -42,7 +119,7 @@ class JoelsModel(n_classes: Int = 10, width: Int = 32, height: Int = 32, depth: 
     println("Starting training with Joel's 3-Layer model...")
     model.setListeners(new ScoreIterationListener(1), pgil)
 
-    val probe = data.training._1(0, 1, ->, ->, ->).reshape(1,3,32,32)
+    val probe = data.training._1(0, 1, ->, ->, ->).reshape(1, 3, 32, 32)
     val checker = new ActivationChecker(probe, n_channels = depth, imgSize = height)
 
     /*
@@ -78,7 +155,7 @@ class JoelsModel(n_classes: Int = 10, width: Int = 32, height: Int = 32, depth: 
     println("Done.")
   }
 
-  def createModel( depth: Int): MultiLayerNetwork = {
+  def createModel(depth: Int): MultiLayerNetwork = {
 
 
     import Activation._
@@ -89,10 +166,12 @@ class JoelsModel(n_classes: Int = 10, width: Int = 32, height: Int = 32, depth: 
       .seed(seed)
       //.regularization(true).l2(0.0005)
       .learningRate(eta) //.000003
-          .lrPolicyDecayRate(1e-6)
+      .lrPolicyDecayRate(1e-6)
       .weightInit(WeightInit.XAVIER)
       .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
       .updater(Updater.ADAM)
+
+      /** new stuff ***/
 
       .list()
 

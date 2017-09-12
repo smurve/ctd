@@ -12,6 +12,4 @@ class CIFAR10LocalContext(fsContext: String = "local") extends CIFAR10Context wi
   val config: CIFAR10Config = if (fsContext == "hdfs") new MyHDFSConfig else new MyLocalConfig
   val session: SparkSession = SparkSession.builder().appName("MNist").master("local").getOrCreate()
   val sc: SparkContext = session.sparkContext
-  //val sc = SparkContext.getOrCreate()
-  //sc.hadoopConfiguration.
 }

@@ -77,7 +77,7 @@ object ShapeRunner {
 
     val defaultArgs = CmdLineArgs(n_batches = 10, size_batch = 100, nf1 = 32)
 
-    val commandlineArgs = new CmdLineTool(new HardParams()).parser.parse(args, defaultArgs)
+    val commandlineArgs = new CmdLineTool().parser.parse(args, defaultArgs)
       .getOrElse( throw new IllegalArgumentException)
 
 

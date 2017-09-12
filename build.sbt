@@ -9,10 +9,12 @@ val cudaversion = "8.0"
 
 val targetPlatform = "linux-x86_64"
 
+ivyConfigurations += config("compileonly").hide
+
 assemblyMergeStrategy in assembly := {
   //see https://stackoverflow.com/questions/17265002/hadoop-no-filesystem-for-scheme-file
-  case PathList("META-INF", "services", "org.apache.hadoop.fs.FileSystem" ) => MergeStrategy.filterDistinctLines
-  case PathList("META-INF", _ @ _*) => MergeStrategy.discard
+  case PathList("META-INF", "services", "org.apache.hadoop.fs.FileSystem") => MergeStrategy.filterDistinctLines
+  case PathList("META-INF", _@_*) => MergeStrategy.discard
   case _ => MergeStrategy.first
 }
 
@@ -25,7 +27,7 @@ val cluster = sys.props.get("cluster").orElse(Some("false")).get
 val localLibs = Seq(
   "org.nd4j" % "nd4j-native-platform" % nd4jVersion,
   "com.github.fommil.netlib" % "all" % "1.1.2"
-  //"org.nd4j" % s"nd4j-cuda-$cudaversion-platform" % nd4jVersion % "provided" classifier "" classifier targetPlatform
+  //"org.nd4j" % s"nd4j-cuda-$cudaversion-platform" % nd4jVersion % "compileonly" classifier "" classifier targetPlatform
 )
 
 val clusterLibs = Seq(
@@ -54,3 +56,5 @@ val specific = if (cluster == "true") clusterLibs else localLibs
 
 libraryDependencies ++= specific
 
+unmanagedClasspath in Compile ++=
+  update.value.select(configurationFilter("compileonly"))
