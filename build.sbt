@@ -41,6 +41,7 @@ libraryDependencies ++= Seq(
   "org.nd4j" %% "nd4s" % nd4jVersion,
   "org.deeplearning4j" % "deeplearning4j-core" % dl4jVersion,
   "org.deeplearning4j" % "deeplearning4j-nn" % dl4jVersion,
+  "org.deeplearning4j" %% "deeplearning4j-ui" % dl4jVersion,
   "org.deeplearning4j" %% "deeplearning4j-parallel-wrapper" % nd4jVersion,
   "org.apache.spark" %% "spark-core" % "2.2.0",
   "org.apache.spark" %% "spark-streaming" % "2.2.0",

@@ -1,5 +1,7 @@
 package org.smurve.iter
 
+import java.util
+
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.DataSet
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor
@@ -29,7 +31,18 @@ class SimpleCIFAR10BatchIterator(dataSet: DataSet, batchSize: Int ) extends Data
 
   override def totalOutcomes() = 10
 
-  override def getLabels = throw new UnsupportedOperationException
+  override def getLabels: util.List[String] =  util.Arrays.asList(
+    "airplane",
+    "automobile",
+    "bird",
+    "cat",
+    "deer",
+    "dog",
+    "frog",
+    "horse",
+    "ship",
+    "truck")
+
 
   override def inputColumns(): Int = 3072
 

@@ -5,8 +5,8 @@ import org.nd4j.linalg.api.buffer.DataBuffer
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil
 import org.nd4j.linalg.dataset.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
-import org.smurve.cifar10.{CIFAR10LocalContext, JoelsModel}
-import org.smurve.iter.DataSetIteratorFactory
+import org.smurve.cifar10.{CIFAR10DataReader, CIFAR10LocalContext, JoelsModel}
+import org.smurve.iter.{DataSetIteratorFactory, SimpleCIFAR10BatchIterator}
 import org.smurve.util.prettyPrint
 
 import scala.language.postfixOps
@@ -14,14 +14,15 @@ import scala.language.postfixOps
 object CIFAR10LocalRunner {
 
   def NUM_TESTS = 10000
+  def NUM_RECS_PER_FILE = 10000
 
   def main(args: Array[String]): Unit = {
 
     val hyperParams = determineHyperParams ( args, defaults = HyperParams(
-      numBatches = 100,
+      numTraining = 10000,
+      numTest = 10000,
       numEpochs = 5,
-      batchSize = 10000,
-      numMinibatches = 50,
+      minibatchSize = 100,
       eta = 1e-3,
       decay = 1e-6,
       precision = "f"
@@ -37,7 +38,8 @@ object CIFAR10LocalRunner {
     println("Done.")
 
     println("Reading data from HDFS...")
-    val (trainingData, testData) = fromHdfs( model, hyperParams )
+    //val (trainingData, testData) = fromHdfs1( model, hyperParams )
+    val (trainingData, testData) = fromHdfs( hyperParams )
     println("Done.")
 
     println("Starting training...")
@@ -58,16 +60,28 @@ object CIFAR10LocalRunner {
       })
   }
 
+
+  def fromHdfs( hyperParams: HyperParams): (DataSetIterator, DataSetIterator) = {
+
+    val (train, test) = CIFAR10DataReader.read()
+
+    val trainIter = new SimpleCIFAR10BatchIterator(train, hyperParams.minibatchSize)
+    val testIter = new SimpleCIFAR10BatchIterator(test, hyperParams.minibatchSize)
+
+    (trainIter, testIter)
+  }
+
   /**
     * read the data iterators from HDFS
     */
-  def fromHdfs(model: JoelsModel, hyperParams: HyperParams): (DataSetIterator, DataSetIterator)= {
+  def fromHdfs1(model: JoelsModel, hyperParams: HyperParams): (DataSetIterator, DataSetIterator)= {
 
 
     val context = new CIFAR10LocalContext("hdfs")
-    val fileCallBack = new CIFAR10SparkReader(context, hyperParams.batchSize)
+    val fileCallBack = new CIFAR10SparkReader(context, hyperParams.minibatchSize)
     val factory = new DataSetIteratorFactory("hdfs://daphnis/users/wgiersche/input/cifar-10", fileCallBack)
-    val fileNames = (1 to hyperParams.numBatches).map(n => s"data_batch_$n.bin").toArray
+    val numFiles = hyperParams.numTraining / NUM_RECS_PER_FILE
+    val fileNames = (1 to numFiles).map(n => s"data_batch_$n.bin").toArray
 
     // test in batches of 100
     val (testSamples, testLabels) = context.read("test_batch.bin")
@@ -81,8 +95,8 @@ object CIFAR10LocalRunner {
       None, //Some(batchReporter),
       fileNames,
       numEpochs = hyperParams.numEpochs,
-      batchSize = hyperParams.batchSize,
-      numMiniBatches = hyperParams.numMinibatches)
+      chunkSize = NUM_RECS_PER_FILE,
+      minibatchSize = hyperParams.minibatchSize)
 
 
     (training, test)

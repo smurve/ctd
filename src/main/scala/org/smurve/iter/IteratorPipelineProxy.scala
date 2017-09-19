@@ -8,13 +8,13 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.smurve.cifar10.runner.BatchReporter
 
 
-class IteratorPipelineProxy(incoming: DataSetIterator, numBatches: Int, batchSize: Int, numMiniBatches: Int) extends DataSetIterator {
+class IteratorPipelineProxy(incoming: DataSetIterator, numChunks: Int, chunkSize: Int, minibatchSize: Int) extends DataSetIterator {
 
-  val outgoing: Array[DataSetIterator] = new Array[DataSetIterator](numBatches)
+  val outgoing: Array[DataSetIterator] = new Array[DataSetIterator](numChunks)
 
   outgoing(0) = {
     val first = incoming.next()
-    new MiniBatchFileDataSetIterator(first, batchSize / numMiniBatches)
+    new MiniBatchFileDataSetIterator(first, minibatchSize)
   }
 
   var reporters: List[BatchReporter] = Nil
@@ -25,7 +25,7 @@ class IteratorPipelineProxy(incoming: DataSetIterator, numBatches: Int, batchSiz
     reporters = batchReporter :: reporters
   }
 
-  override def cursor(): Int = currBatch * batchSize + outgoing(currBatch).cursor()
+  override def cursor(): Int = currBatch * chunkSize + outgoing(currBatch).cursor()
 
   override def next(num: Int): DataSet = throw new UnsupportedOperationException
 
@@ -43,20 +43,20 @@ class IteratorPipelineProxy(incoming: DataSetIterator, numBatches: Int, batchSiz
 
   override def asyncSupported() = false
 
-  override def batch: Int = batchSize
+  override def batch: Int = chunkSize
 
   override def reset(): Unit = {
     println("Resetting incoming batch iterator")
     incoming.reset()
     outgoing.indices.foreach(outgoing(_) = null)
-    outgoing(0) = new MiniBatchFileDataSetIterator(incoming.next(), batchSize / numMiniBatches)
+    outgoing(0) = new MiniBatchFileDataSetIterator(incoming.next(), minibatchSize)
     currBatch = 0
   }
 
   override def totalExamples(): Int = incoming.totalExamples()
 
   override def numExamples(): Int = {
-    val inc = incoming.numExamples() * batchSize
+    val inc = incoming.numExamples() * chunkSize
     val out = outgoing(currBatch).numExamples()
     inc + out
   }
@@ -73,7 +73,7 @@ class IteratorPipelineProxy(incoming: DataSetIterator, numBatches: Int, batchSiz
 
       if (incoming.hasNext) {
         currBatch += 1
-        outgoing(currBatch) = new MiniBatchFileDataSetIterator(incoming.next, batchSize / numMiniBatches)
+        outgoing(currBatch) = new MiniBatchFileDataSetIterator(incoming.next, minibatchSize)
         val n = outgoing(currBatch).next()
         n
       } else

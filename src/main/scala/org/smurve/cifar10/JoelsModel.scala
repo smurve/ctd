@@ -5,7 +5,7 @@ import java.io.File
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator
 import org.deeplearning4j.nn.api.OptimizationAlgorithm
 import org.deeplearning4j.nn.conf.inputs.InputType
-import org.deeplearning4j.nn.conf.layers.{ConvolutionLayer, DenseLayer, OutputLayer, SubsamplingLayer}
+import org.deeplearning4j.nn.conf.layers._
 import org.deeplearning4j.nn.conf.{MultiLayerConfiguration, NeuralNetConfiguration, Updater}
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.nn.weights.WeightInit
@@ -24,53 +24,81 @@ class JoelsModel(n_classes: Int = 10, width: Int = 32, height: Int = 32, depth: 
                  nf_1: Int = 32, nf_2: Int = 64, nf_3: Int = 128, n_dense: Int = 1024,
                  eta: Double, seed: Int = 5432) extends CIFAR10Tools {
 
+
   lazy val cudaEnv: Boolean = {
     try {
       Class.forName("org.nd4j.jita.conf.CudaEnvironment")
+      printf("Found class CudaEnvironment. Trying to access NVIDIA's GPUs")
       true
     } catch {
-      case _: ClassNotFoundException => false
+      case _: ClassNotFoundException =>
+        printf("Didn't find class CudaEnvironment. Executing on CPUs")
+        false
     }
   }
 
-/*
-  if (cudaEnv) {
-    import org.nd4j.jita.conf.CudaEnvironment
-    CudaEnvironment.getInstance().getConfiguration
-      // key option enabled
-      .allowMultiGPU(true)
+  /*
+    if (cudaEnv) {
+      import org.nd4j.jita.conf.CudaEnvironment
+      CudaEnvironment.getInstance().getConfiguration
+        // key option enabled
+        .allowMultiGPU(true)
 
-      // we're allowing larger memory caches
-      .setMaximumDeviceCache(2L * 1024L * 1024L * 1024L)
+        // we're allowing larger memory caches
+        .setMaximumDeviceCache(2L * 1024L * 1024L * 1024L)
 
-      // cross-device access is used for faster model averaging over pcie
-      .allowCrossDeviceAccess(false)
-  }*/
+        // cross-device access is used for faster model averaging over pcie
+        .allowCrossDeviceAccess(false)
+    }*/
 
 
   val model: MultiLayerNetwork = createModel(depth)
 
+
+  def setupUI(): Unit = {
+    System.setProperty("org.deeplearning4j.ui.port", "9090")
+    import org.deeplearning4j.ui.api.UIServer
+    import org.deeplearning4j.ui.stats.StatsListener
+    import org.deeplearning4j.ui.storage.InMemoryStatsStorage
+    //Initialize the user interface backend//Initialize the user interface backend
+
+    val uiServer = UIServer.getInstance
+
+    //Configure where the network information (gradients, score vs. time etc) is to be stored. Here: store in memory.
+    val statsStorage = new InMemoryStatsStorage //Alternative: new FileStatsStorage(File), for saving and loading later
+
+    //Attach the StatsStorage instance to the UI: this allows the contents of the StatsStorage to be visualized
+    uiServer.attach(statsStorage)
+
+    //Then add the StatsListener to collect this information from the network, as it trains
+    model.setListeners(new StatsListener(statsStorage,1))
+
+  }
+
+  setupUI()
 
   def this(hyperParams: HyperParams) = this(eta = hyperParams.eta)
 
 
   def train(trainingSet: DataSetIterator, testSet: DataSetIterator): Unit = {
 
+    val reportEvery = 10
+
     val pgil = new ParamAndGradientIterationListener(
-      /*iterations=*/ 1,
+      /*iterations=*/ reportEvery,
       /* printHeader = */ true,
-      /*printMean=*/ false,
+      /*printMean=*/ true,
       /* printMinMax=*/ true,
       /*printMeanAbsValue=*/ false,
       /*outputToConsole=*/ false,
       /*outputToFile = */ true,
-      /*outputToLogger = */ false,
+      /*outputToLogger = */ true,
       /*file = */ new File("stats.csv"),
       /*delimiter = */ ",")
 
-    model.setListeners(new ScoreIterationListener(1), pgil)
+    model.setListeners(new ScoreIterationListener(reportEvery), pgil)
 
-    if ( cudaEnv ) {
+    if (cudaEnv) {
       val pw: ParallelWrapper = new ParallelWrapper.Builder(model)
         // DataSets prefetching options. Set this value with respect to number of actual devices
         .prefetchBuffer(2)
@@ -89,7 +117,18 @@ class JoelsModel(n_classes: Int = 10, width: Int = 32, height: Int = 32, depth: 
       pw.fit(trainingSet)
 
     } else {
-      model.fit(trainingSet)
+      var mini = 1
+      while ( trainingSet.hasNext) {
+        val nextMinibatch = trainingSet.next()
+        println(s"Minibatch No: $mini with ${nextMinibatch.getFeatures.size(0)} images" )
+        model.fit(nextMinibatch)
+        if ( mini % reportEvery == 0 ) {
+          val eval = model.evaluate(testSet)
+          println(eval.stats)
+        }
+        mini += 1
+      }
+      //model.fit(trainingSet)
     }
 
 
@@ -164,14 +203,13 @@ class JoelsModel(n_classes: Int = 10, width: Int = 32, height: Int = 32, depth: 
 
     val conf: MultiLayerConfiguration = new NeuralNetConfiguration.Builder()
       .seed(seed)
+
       //.regularization(true).l2(0.0005)
       .learningRate(eta) //.000003
-      .lrPolicyDecayRate(1e-6)
+      //.lrPolicyDecayRate(1e-6)
       .weightInit(WeightInit.XAVIER)
       .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
       .updater(Updater.ADAM)
-
-      /** new stuff ***/
 
       .list()
 
@@ -209,6 +247,8 @@ class JoelsModel(n_classes: Int = 10, width: Int = 32, height: Int = 32, depth: 
         .nOut(n_dense)
         .build())
 
+      //.layer(6, new DropoutLayer.Builder(.3).build())
+
       .layer(6, new OutputLayer.Builder(NEGATIVELOGLIKELIHOOD)
         .nOut(n_classes)
         .activation(SOFTMAX)
@@ -216,6 +256,7 @@ class JoelsModel(n_classes: Int = 10, width: Int = 32, height: Int = 32, depth: 
 
       .setInputType(InputType.convolutionalFlat(height, width, depth))
       .backprop(true).pretrain(false)
+
 
       .build()
 
