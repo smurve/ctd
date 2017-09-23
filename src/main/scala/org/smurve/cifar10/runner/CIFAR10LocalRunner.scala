@@ -1,20 +1,15 @@
 package org.smurve.cifar10.runner
 
-import org.deeplearning4j.api.storage.impl.RemoteUIStatsStorageRouter
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.parallelism.ParallelWrapper
 import org.deeplearning4j.ui.api.UIServer
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage
 import org.nd4j.linalg.api.buffer.DataBuffer
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil
-import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration
-import org.nd4j.linalg.api.memory.enums.{AllocationPolicy, LearningPolicy}
-import org.nd4j.linalg.api.ndarray.INDArray
-import org.nd4j.linalg.dataset.{DataSet, MiniBatchFileDataSetIterator}
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
-import org.nd4j.linalg.factory.Nd4j
-import org.smurve.cifar10.{CIFAR10DataReader, Conv3ModelFactory, DataContext}
-import org.smurve.iter.{SimpleCIFAR10BatchIterator, SplitBasedCIFAR10BatchIterator}
+import org.nd4j.linalg.dataset.{DataSet, MiniBatchFileDataSetIterator}
+import org.smurve.cifar10.{Conv3ModelFactory, DataContext}
+import org.smurve.iter.SplitBasedCIFAR10BatchIterator
 import org.smurve.util.prettyPrint
 
 import scala.language.postfixOps
@@ -33,13 +28,13 @@ object CIFAR10LocalRunner {
       numTest = 1000,
       numEpochs = 4,
       minibatchSize = 100,
-      eta = 2e-1,
+      eta = 5e-1,
       decay = 1e-5,
       precision = "f",
-      nf1 = 20,
-      nf2 = 40,
-      nf3 = 100,
-      dense = 500
+      nf1 = 32,
+      nf2 = 64,
+      nf3 = 128,
+      dense = 1024
     ))
 
     /**
@@ -71,8 +66,9 @@ object CIFAR10LocalRunner {
     println("Creating the model...")
     val model = new Conv3ModelFactory(hyperParams).createModel(DataContext.NUM_CHANNELS)
 
+    // Will only be used for training if hyperparams are > 1
     val wrapper = new ParallelWrapper.Builder(model)
-        .workers(hyperParams.parallel)
+        .workers(math.max(hyperParams.parallel,2))
         .averagingFrequency(1)
         .reportScoreAfterAveraging(true)
         .build()
@@ -91,6 +87,10 @@ object CIFAR10LocalRunner {
     val (trainingIterators, testData) = fromFiles(hyperParams, nFiles = hyperParams.numFiles)
     println("Done.")
 
+    val evaluation = model.evaluate(testData)
+    testData.reset()
+    println(evaluation.stats)
+
     println("Starting training...")
     (1 to hyperParams.numEpochs).foreach { epoch =>
       /*
@@ -103,10 +103,14 @@ object CIFAR10LocalRunner {
       // */
 
       println(s"Epoch: $epoch")
-      for (fileNum <- trainingIterators.indices) {
-        println(s"Training from File Nr. $fileNum")
 
-        wrapper.fit(trainingIterators(fileNum))
+      for (fileNum <- trainingIterators.indices) {
+        println(s"Training from File Nr. ${fileNum+1}")
+
+        if ( hyperParams.parallel > 1 )
+          wrapper.fit(trainingIterators(fileNum))
+        else
+          model.fit(trainingIterators(fileNum))
 
         trainingIterators(fileNum).reset()
         val evaluation = model.evaluate(testData)
