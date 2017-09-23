@@ -7,7 +7,12 @@ val nd4jVersion = "0.9.1"
 val dl4jVersion = "0.9.1"
 val cudaversion = "8.0"
 
+fork in run := true
+
 val targetPlatform = "linux-x86_64"
+
+javaOptions in run += "-Dorg.bytedeco.javacpp.maxPhysicalBytes=8G"
+javaOptions in run += "-Dorg.bytedeco.javacpp.maxbytes=8G"
 
 ivyConfigurations += config("compileonly").hide
 
@@ -27,7 +32,7 @@ val cluster = sys.props.get("cluster").orElse(Some("false")).get
 val localLibs = Seq(
   "org.nd4j" % "nd4j-native-platform" % nd4jVersion,
   "com.github.fommil.netlib" % "all" % "1.1.2"
-  //"org.nd4j" % s"nd4j-cuda-$cudaversion-platform" % nd4jVersion % "compileonly" classifier "" classifier targetPlatform
+  //,"org.nd4j" % s"nd4j-cuda-$cudaversion-platform" % nd4jVersion % "compileonly" classifier "" classifier targetPlatform
 )
 
 val clusterLibs = Seq(
@@ -43,10 +48,6 @@ libraryDependencies ++= Seq(
   "org.deeplearning4j" % "deeplearning4j-nn" % dl4jVersion,
   "org.deeplearning4j" %% "deeplearning4j-ui" % dl4jVersion,
   "org.deeplearning4j" %% "deeplearning4j-parallel-wrapper" % nd4jVersion,
-  "org.apache.spark" %% "spark-core" % "2.2.0",
-  "org.apache.spark" %% "spark-streaming" % "2.2.0",
-  "org.apache.spark" %% "spark-sql" % "2.2.0",
-  "org.apache.hadoop" % "hadoop-client" % "2.7.3",
   "com.github.scopt" %% "scopt" % "3.5.0"
 )
 

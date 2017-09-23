@@ -1,25 +1,18 @@
 package org.smurve.mnist
 
-import java.io.File
-import java.util.UUID
+import java.io.{File, FileInputStream}
 
-import org.apache.spark.SparkContext
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SparkSession
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4s.Implicits._
-import org.smurve.mnist.config.MNistConfig
 import org.smurve.nd4s._
 
 import scala.util.Random
 
 trait MNISTTools  {
 
-  protected val config: MNistConfig
-  protected val session: SparkSession
-  protected val sc: SparkContext
-
+  val NUM_BYTES_PER_IMAGE_FILE = 47040016
+  val NUM_BYTES_PER_LABEL_FILE = 60008
 
   def saveModel(name: String, weights: Map[String, INDArray] ) : Unit = {
 
@@ -41,28 +34,27 @@ trait MNISTTools  {
     * @param name name of file or directory to read from
     * @return an RDD of MNISTImages wrappers
     */
-  protected def createImagesFromBinary(name: String): RDD[MNISTImages] = {
+  protected def createImagesFromBinary(name: String): MNISTImages = {
 
-    val rawImages = sc.binaryFiles(resolve(name))
-
-    rawImages.map(p => {
-      val stream = p._2
-      new MNISTImages(stream.toArray())
-    })
+      val stream = new FileInputStream(new File(name))
+      val bytes = new Array[Byte](NUM_BYTES_PER_IMAGE_FILE)
+      stream.read(bytes)
+      new MNISTImages(bytes)
   }
+
+
 
   /**
     * @param name name of file or directory to read from
     * @return an RDD of MNISTLabel wrappers
     */
-  protected def createLabelsFromBinary(name: String): RDD[MNISTLabels] = {
+  protected def createLabelsFromBinary(name: String): MNISTLabels = {
 
-    val rawLabels = sc.binaryFiles(resolve(name))
+    val stream = new FileInputStream(new File(name))
+    val bytes = new Array[Byte](NUM_BYTES_PER_LABEL_FILE)
+    stream.read(bytes)
+    new MNISTLabels(bytes)
 
-    rawLabels.map(p => {
-      val stream = p._2
-      new MNISTLabels(stream.toArray())
-    })
   }
 
   /**
@@ -71,32 +63,16 @@ trait MNISTTools  {
     * @return a pair of INDArrays containing images and labels
     */
   def readFromBinary(key: String): (INDArray, INDArray) = {
-    val images: MNISTImages = createImagesFromBinary(s"input/$key").first()
-    val labels = createLabelsFromBinary(s"input/$key-labels").first()
+    val images: MNISTImages = createImagesFromBinary(s"input/$key")
+    val labels = createLabelsFromBinary(s"input/$key-labels")
 
     (images.asINDarray, labels.asINDarray)
   }
 
 
-
-  /**
-    * resolve in local fs or hdfs, depending on config
-    *
-    * @param name short name of the file
-    * @return
-    */
-  protected def resolve(name: String): String = config.prefix + name
-
-
   def asImageString(iNDArray: INDArray): String = {
     val arr = toArray(iNDArray)
     MNISTImage(arr.map(d => d.toByte), 28, 28).toString
-  }
-
-  protected def hdfs_save(rdd: RDD[MNISTImage], baseName: String): String = {
-    val tmpName = baseName + "_" + UUID.randomUUID().toString
-    rdd.saveAsObjectFile(tmpName)
-    tmpName
   }
 
   /**

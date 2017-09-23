@@ -2,11 +2,16 @@ package org.smurve.cifar10.runner
 
 case class HyperParams
 (
+  parallel: Int,
   numEpochs: Int,
-  numTraining: Int,
+  numFiles: Int,
   numTest: Int,
   minibatchSize: Int,
   eta: Double,
   decay: Double,
-  precision: String
+  precision: String,
+  nf1: Int,
+  nf2: Int,
+  nf3: Int,
+  dense: Int
 )

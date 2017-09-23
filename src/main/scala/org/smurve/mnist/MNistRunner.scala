@@ -65,7 +65,6 @@ abstract class MNistRunner extends MNISTTools {
     }
 
 
-    session.stop()
   }
 
   /**

@@ -18,7 +18,7 @@ import org.smurve.dl4j.ActivationChecker
 
 
 class DenseModel(n_classes: Int = 10, width: Int = 32, height: Int = 32, depth: Int = 3,
-                 n_dense: Int, eta: Double, seed: Int = 5432) extends CIFAR10Tools {
+                 n_dense: Int, eta: Double, seed: Int = 5432) {
 
   val model: MultiLayerNetwork = createModel( depth )
 

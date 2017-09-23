@@ -9,7 +9,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil
 import org.nd4j.linalg.dataset.DataSet
 import org.nd4s.Implicits._
-import org.smurve.cifar10.JoelsModel
+import org.smurve.cifar10.Conv3ModelFactory
 import org.smurve.dl4j.ActivationChecker
 import org.smurve.nd4s._
 
@@ -103,9 +103,9 @@ object ShapeRunner {
 
 
       /* */
-      private val model = new JoelsModel(
+      private val model = new Conv3ModelFactory(
         n_classes = n_symbols, width = imgSize, height = imgSize, depth = n_channels,
-        nf_1 = nf1, nf_2 = nf2, nf_3=nf3 ,n_dense = n_dense, eta = eta, seed = seed).model
+        nf_1 = nf1, nf_2 = nf2, nf_3=nf3 ,n_dense = n_dense, eta = eta, seed = seed).createModel(n_channels)
       // * /
       /*
       private val model = new Conv2Model(

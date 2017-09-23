@@ -1,17 +1,11 @@
 package org.smurve.mnist
 
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.SparkSession
-import org.smurve.mnist.config.MyLocalConfig
 import org.smurve.mnist.models.EfficientConvNet
 import org.smurve.nd4s._
 
 import scala.util.Random
 
 object MNISTConvNetDemo extends MNISTTools {
-  override protected val config = new MyLocalConfig
-  override protected val session: SparkSession = SparkSession.builder().appName("MNist").master("local").getOrCreate()
-  override protected val sc: SparkContext = session.sparkContext
 
   val SEED = 123
   val rnd = new Random()

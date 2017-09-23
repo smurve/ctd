@@ -18,7 +18,7 @@ import org.smurve.dl4j.ActivationChecker
 
 
 class Conv2Model(n_classes: Int = 10, width: Int = 32, height: Int = 32, depth: Int = 3,
-                 n_features_1: Int, n_features_2: Int, n_dense: Int, eta: Double, seed: Int = 5432) extends CIFAR10Tools {
+                 n_features_1: Int, n_features_2: Int, n_dense: Int, eta: Double, seed: Int = 5432) {
 
   val model: MultiLayerNetwork = createModel( depth )
 

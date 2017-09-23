@@ -1,6 +1,5 @@
 package org.smurve.cifar10.runner
 
-import org.nd4j.linalg.api.buffer.DataBuffer
 import scopt.OptionParser
 
 
@@ -9,11 +8,14 @@ class CmdLineTool() {
   val parser = new OptionParser[HyperParams]("CIFAR10Runner") {
     head("CIFAR10Runner", "1.0")
 
+    opt[Int]('P', "parallel").valueName("Train P models in parallel")
+      .action((x, args) => args.copy(numEpochs = x))
+
     opt[Int]('E', "num-epochs").valueName("Number of Epochs")
       .action((x, args) => args.copy(numEpochs = x))
 
-    opt[Int]('T', "num-training").valueName("Number of Training Images")
-      .action((x, args) => args.copy(numTraining = x))
+    opt[Int]('T', "num-training").valueName("Number of Training Files")
+      .action((x, args) => args.copy(numFiles = x))
 
     opt[Int]('t', "num-test").valueName("Number of test Images")
       .action((x, args) => args.copy(numTest = x))
