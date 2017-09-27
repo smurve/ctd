@@ -3,3 +3,15 @@
 .idea/
 project/project/
 spark-warehouse/
+/input/cifar10/img_data_batch_5.bin
+/input/cifar10/lbl_data_batch_5.bin
+/input/cifar10/img_data_batch_1.bin
+/input/cifar10/img_data_batch_3.bin
+/input/cifar10/img_data_batch_4.bin
+/input/cifar10/lbl_data_batch_2.bin
+/input/cifar10/img_data_batch_2.bin
+/input/cifar10/lbl_data_batch_1.bin
+/input/cifar10/img_test_batch.bin
+/input/cifar10/lbl_data_batch_3.bin
+/input/cifar10/lbl_data_batch_4.bin
+/input/cifar10/lbl_test_batch.bin

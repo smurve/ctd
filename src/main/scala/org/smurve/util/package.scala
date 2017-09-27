@@ -4,13 +4,13 @@ import java.lang.reflect.Field
 
 package object util {
 
-  def prettyPrint(a: Any): String = {
+  def prettyPrint(obj: Any): String = {
     // Recursively get all the fields; this will grab vals declared in parents of case classes.
     def getFields(cls: Class[_]): List[Field] =
       Option(cls.getSuperclass).map(getFields).getOrElse(Nil) ++
         cls.getDeclaredFields.toList.filterNot(f =>
           f.isSynthetic || java.lang.reflect.Modifier.isStatic(f.getModifiers))
-    a match {
+    obj match {
       // Make Strings look similar to their literal form.
       case s: String =>
         '"' + Seq("\n" -> "\\n", "\r" -> "\\r", "\t" -> "\\t", "\"" -> "\\\"", "\\" -> "\\\\").foldLeft(s) {

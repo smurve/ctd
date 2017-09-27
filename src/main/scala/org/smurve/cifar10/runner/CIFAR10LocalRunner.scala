@@ -1,9 +1,12 @@
 package org.smurve.cifar10.runner
 
+import java.io.File
+
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.parallelism.ParallelWrapper
 import org.deeplearning4j.ui.api.UIServer
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage
+import org.deeplearning4j.util.ModelSerializer
 import org.nd4j.linalg.api.buffer.DataBuffer
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
@@ -16,46 +19,25 @@ import scala.language.postfixOps
 
 object CIFAR10LocalRunner {
 
-  def NUM_TESTS = 10000
-
+  def NUM_TESTS = 1000
   def NUM_RECS_PER_FILE = 10000
 
   def main(args: Array[String]): Unit = {
 
     val hyperParams = determineHyperParams(args, defaults = HyperParams(
       parallel = 2,
-      numFiles = 3,
-      numTest = 1000,
-      numEpochs = 4,
+      numFiles = 2,
+      numTest = NUM_TESTS,
+      numEpochs = 3,
       minibatchSize = 100,
       eta = 5e-1,
       decay = 1e-5,
       precision = "f",
-      nf1 = 32,
-      nf2 = 64,
-      nf3 = 128,
-      dense = 1024
+      nf1 = 20,
+      nf2 = 30,
+      nf3 = 80,
+      dense = 400
     ))
-
-    /**
-      * 70% after 2 Epochs
-      *
-      * val hyperParams = determineHyperParams(args, defaults = HyperParams(
-      * parallel = 1,
-      * numFiles = 5,
-      * numTest = 1000,
-      * numEpochs = 20,
-      * minibatchSize = 100,
-      * eta = 5e-2,
-      * decay = 1e-8,
-      * precision = "d",
-      * nf1 = 32,
-      * nf2 = 64,
-      * nf3 = 128,
-      * dense = 1000
-      * ))
-      */
-
 
     DataTypeUtil.setDTypeForContext(dataBufferTypeFor("f"))
 
@@ -75,9 +57,11 @@ object CIFAR10LocalRunner {
 
     println("Done.")
 
+    /*
     println("Network Configuration:")
     println(model.getLayerWiseConfigurations.toString)
     println()
+    */
 
     println("Setting up UI...")
     val ui = setupUI(model)
@@ -119,26 +103,23 @@ object CIFAR10LocalRunner {
       }
     }
 
-    //ui.stop()
+    ModelSerializer.writeModel(model, new File("CIFAR10-Model.zip"), false)
+
+    ui.stop()
     println("Done.")
   }
 
   def setupUI(model: MultiLayerNetwork): UIServer = {
     import org.deeplearning4j.ui.api.UIServer
     import org.deeplearning4j.ui.stats.StatsListener
+
     //Initialize the user interface backend//Initialize the user interface backend
-
     val uiServer = UIServer.getInstance
-
-    //uiServer.enableRemoteListener()
-
     //Configure where the network information (gradients, score vs. time etc) is to be stored. Here: store in memory.
     val statsStorage = new InMemoryStatsStorage //Alternative: new FileStatsStorage(File), for saving and loading later
-
     //Attach the StatsStorage instance to the UI: this allows the contents of the StatsStorage to be visualized
     uiServer.attach(statsStorage)
-
-    //Then add the StatsListener to collect this information from the network, as it trains
+    //Then add the StatsListener to collect this infrormation from the network, as it trains
     model.setListeners(new StatsListener(statsStorage))
 
     //val remoteUIRouter = new RemoteUIStatsStorageRouter("http://localhost:9000")

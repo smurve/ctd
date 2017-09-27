@@ -1,1 +1,0 @@
-sbt -Dcluster=true -Ddependency.platform='linux-x86_64' 'set test in assembly := {}' clean assembly

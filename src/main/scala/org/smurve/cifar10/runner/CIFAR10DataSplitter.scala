@@ -33,7 +33,6 @@ object CIFAR10DataSplitter {
 
   /**
     * split the files into images and labels
-    * @param args
     */
   def main(args: Array[String]): Unit = {
 

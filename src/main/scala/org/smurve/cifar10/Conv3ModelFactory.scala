@@ -15,43 +15,12 @@ class Conv3ModelFactory(n_classes: Int = 10, width: Int = 32, height: Int = 32, 
                         nf_1: Int = 32, nf_2: Int = 64, nf_3: Int = 128, n_dense: Int = 1024,
                         eta: Double, seed: Int = 5432) {
 
-
-  lazy val cudaEnv: Boolean = {
-    try {
-      Class.forName("org.nd4j.jita.conf.CudaEnvironment")
-      println("Found class CudaEnvironment. Trying to access NVIDIA's GPUs")
-      true
-    } catch {
-      case _: ClassNotFoundException =>
-        println("Didn't find class CudaEnvironment. Executing on CPUs")
-        false
-    }
-  }
-
-  /*
-    if (cudaEnv) {
-      import org.nd4j.jita.conf.CudaEnvironment
-      CudaEnvironment.getInstance().getConfiguration
-        // key option enabled
-        .allowMultiGPU(true)
-
-        // we're allowing larger memory caches
-        .setMaximumDeviceCache(2L * 1024L * 1024L * 1024L)
-
-        // cross-device access is used for faster model averaging over pcie
-        .allowCrossDeviceAccess(false)
-    }
-  */
-
-
   def this(hyperParams: HyperParams) = this(
     eta = hyperParams.eta,
     nf_1 = hyperParams.nf1,
     nf_2 = hyperParams.nf2,
     nf_3 = hyperParams.nf3,
     n_dense = hyperParams.dense)
-
-
 
   var index = 0
 
@@ -61,7 +30,6 @@ class Conv3ModelFactory(n_classes: Int = 10, width: Int = 32, height: Int = 32, 
   }
 
   def createModel(depth: Int): MultiLayerNetwork = {
-
 
     import Activation._
     import LossFunctions.LossFunction._
@@ -131,7 +99,6 @@ class Conv3ModelFactory(n_classes: Int = 10, width: Int = 32, height: Int = 32, 
 
       .setInputType(InputType.convolutionalFlat(height, width, depth))
       .backprop(true).pretrain(false)
-
 
       .build()
 

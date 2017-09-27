@@ -16,7 +16,6 @@ import org.smurve.cifar10._
   */
 class DataContext(basePath: String ) {
 
-
   def read(fileName: String, num_records: Int = NUM_RECORDS_PER_FILE, dump: Boolean = false): (INDArray, INDArray) = {
 
     val bytes = new Array[Byte](num_records * BUFFER_SIZE_PER_ENTRY)
@@ -29,13 +28,6 @@ class DataContext(basePath: String ) {
     val asRecords = ndarr.reshape(num_records, BUFFER_SIZE_PER_ENTRY)
     val reduced = asRecords(0 -> num_records, ->)
 
-    /*
-
-    This produces the amazing off-by-one bug
-
-    val samples = reduced(->, 1 ->).reshape(num_records, NUM_CHANNELS, IMG_HEIGHT, IMG_WIDTH)
-    val centered = samples / 255 - 0.5
-    */
     val samples = reduced(->, 1 ->).reshape(num_records, NUM_CHANNELS, IMG_HEIGHT, IMG_WIDTH)
 
     val labels = Nd4j.zeros(10 * num_records).reshape(num_records, 10)

@@ -5,7 +5,7 @@ import scopt.OptionParser
 
 class CmdLineTool() {
 
-  val parser = new OptionParser[HyperParams]("CIFAR10Runner") {
+  val parser: OptionParser[HyperParams] = new OptionParser[HyperParams]("CIFAR10Runner") {
     head("CIFAR10Runner", "1.0")
 
     opt[Int]('P', "parallel").valueName("Train P models in parallel")
