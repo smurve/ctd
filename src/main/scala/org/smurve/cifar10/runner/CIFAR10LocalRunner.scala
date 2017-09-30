@@ -11,7 +11,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.dataset.{DataSet, MiniBatchFileDataSetIterator}
-import org.smurve.cifar10.{Conv3ModelFactory, DataContext}
+import org.smurve.cifar10.{ConvolutionModelFactory, DataContext}
 import org.smurve.iter.SplitBasedCIFAR10BatchIterator
 import org.smurve.util.prettyPrint
 
@@ -25,18 +25,18 @@ object CIFAR10LocalRunner {
   def main(args: Array[String]): Unit = {
 
     val hyperParams = determineHyperParams(args, defaults = HyperParams(
-      parallel = 2,
-      numFiles = 2,
+      parallel = 1,
+      numFiles = 3,
       numTest = NUM_TESTS,
-      numEpochs = 3,
+      numEpochs = 2,
       minibatchSize = 100,
-      eta = 5e-1,
+      eta = 3e-1,
       decay = 1e-5,
       precision = "f",
-      nf1 = 20,
-      nf2 = 30,
-      nf3 = 80,
-      dense = 400
+      nf1 = 32,
+      nf2 = 64,
+      nf3 = 128,
+      dense = 1024
     ))
 
     DataTypeUtil.setDTypeForContext(dataBufferTypeFor("f"))
@@ -44,9 +44,8 @@ object CIFAR10LocalRunner {
     println("Running CIFAR-10 in local mode.")
     report(hyperParams)
 
-
     println("Creating the model...")
-    val model = new Conv3ModelFactory(hyperParams).createModel(DataContext.NUM_CHANNELS)
+    val model = new ConvolutionModelFactory(hyperParams).createModel(DataContext.NUM_CHANNELS)
 
     // Will only be used for training if hyperparams are > 1
     val wrapper = new ParallelWrapper.Builder(model)

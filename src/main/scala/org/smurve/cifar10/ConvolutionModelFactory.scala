@@ -11,9 +11,9 @@ import org.nd4j.linalg.lossfunctions.LossFunctions
 import org.smurve.cifar10.runner.HyperParams
 
 
-class Conv3ModelFactory(n_classes: Int = 10, width: Int = 32, height: Int = 32, depth: Int = 3,
-                        nf_1: Int = 32, nf_2: Int = 64, nf_3: Int = 128, n_dense: Int = 1024,
-                        eta: Double, seed: Int = 5432) {
+class ConvolutionModelFactory(n_classes: Int = 10, width: Int = 32, height: Int = 32, depth: Int = 3,
+                              nf_1: Int = 32, nf_2: Int = 64, nf_3: Int = 128, n_dense: Int = 1024,
+                              eta: Double, seed: Int = 5432) {
 
   def this(hyperParams: HyperParams) = this(
     eta = hyperParams.eta,
@@ -35,7 +35,7 @@ class Conv3ModelFactory(n_classes: Int = 10, width: Int = 32, height: Int = 32, 
     import LossFunctions.LossFunction._
     import SubsamplingLayer._
 
-    val conf: MultiLayerConfiguration = new NeuralNetConfiguration.Builder()
+      val conf: MultiLayerConfiguration = new NeuralNetConfiguration.Builder()
       .seed(seed)
 
       .regularization(true).l2(0.0005)
